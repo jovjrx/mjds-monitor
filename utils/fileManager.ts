@@ -1,83 +1,61 @@
-import { promises as fs } from 'fs';
+import fs, { promises as fsPromises } from 'fs';
 import path from 'path';
 import { Site, Tipo, SiteStatus } from './verificarSite';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 
-// Dados em memória para Vercel
-let sitesInMemory: Site[] = [
-  {
-    id: "1",
-    url: "https://www.google.com",
-    nome: "Google",
-    tipoId: "1",
-    ativo: true
-  },
-  {
-    id: "2",
-    url: "https://www.github.com",
-    nome: "GitHub",
-    tipoId: "2",
-    ativo: true
-  }
-];
+// Detectar se estamos rodando na Vercel
+const isVercel = !!process.env.VERCEL;
 
-let tiposInMemory: Tipo[] = [
-  {
-    id: "1",
-    nome: "Institucional",
-    descricao: "Sites institucionais e corporativos"
-  },
-  {
-    id: "2", 
-    nome: "Comercial",
-    descricao: "Sites comerciais e e-commerce"
-  },
-  {
-    id: "3",
-    nome: "Painel",
-    descricao: "Painéis administrativos"
-  }
-];
-
+// Dados em memória (usados quando escrita em disco não é possível)
+let sitesInMemory: Site[] = [];
+let tiposInMemory: Tipo[] = [];
 let monitoramentoInMemory: Record<string, SiteStatus> = {};
 
-// Verificar se estamos na Vercel (sem acesso ao sistema de arquivos)
-const isVercel = process.env.VERCEL === '1' || !fs.access;
+// Carregar dados dos arquivos para uso inicial
+try {
+  const rawSites = fs.readFileSync(path.join(DATA_DIR, 'sites.json'), 'utf-8');
+  sitesInMemory = JSON.parse(rawSites);
+} catch {
+  sitesInMemory = [];
+}
+
+try {
+  const rawTipos = fs.readFileSync(path.join(DATA_DIR, 'tipos.json'), 'utf-8');
+  tiposInMemory = JSON.parse(rawTipos);
+} catch {
+  tiposInMemory = [];
+}
+
+try {
+  const rawMonitoramento = fs.readFileSync(
+    path.join(DATA_DIR, 'monitoramento.json'),
+    'utf-8'
+  );
+  monitoramentoInMemory = JSON.parse(rawMonitoramento);
+} catch {
+  monitoramentoInMemory = {};
+}
 
 // Garantir que o diretório data existe
 async function ensureDataDir() {
   if (isVercel) return;
   
   try {
-    await fs.access(DATA_DIR);
+    await fsPromises.access(DATA_DIR);
   } catch {
-    await fs.mkdir(DATA_DIR, { recursive: true });
+    await fsPromises.mkdir(DATA_DIR, { recursive: true });
   }
 }
 
 export async function lerArquivo<T>(nomeArquivo: string): Promise<T> {
-  if (isVercel) {
-    // Na Vercel, usar dados em memória
-    switch (nomeArquivo) {
-      case 'sites.json':
-        return sitesInMemory as T;
-      case 'tipos.json':
-        return tiposInMemory as T;
-      case 'monitoramento.json':
-        return monitoramentoInMemory as T;
-      default:
-        return [] as T;
-    }
-  }
-
   try {
     await ensureDataDir();
     const caminho = path.join(DATA_DIR, nomeArquivo);
     
     // Verificar se o arquivo existe
     try {
-      await fs.access(caminho);
+      await fsPromises.access(caminho);
     } catch {
       // Se não existe, retornar array vazio ou objeto vazio
       if (nomeArquivo === 'monitoramento.json') {
@@ -86,21 +64,35 @@ export async function lerArquivo<T>(nomeArquivo: string): Promise<T> {
       return [] as T;
     }
     
-    const conteudo = await fs.readFile(caminho, 'utf-8');
+    const conteudo = await fsPromises.readFile(caminho, 'utf-8');
     return JSON.parse(conteudo);
   } catch (error) {
     console.error(`Erro ao ler arquivo ${nomeArquivo}:`, error);
-    // Retornar valor padrão baseado no tipo de arquivo
-    if (nomeArquivo === 'monitoramento.json') {
-      return {} as T;
+    // Falha ao ler do disco, retornar dados em memória
+    switch (nomeArquivo) {
+      case 'sites.json':
+        return sitesInMemory as T;
+      case 'tipos.json':
+        return tiposInMemory as T;
+      case 'monitoramento.json':
+        return monitoramentoInMemory as T;
+      default:
+        if (nomeArquivo === 'monitoramento.json') {
+          return {} as T;
+        }
+        return [] as T;
     }
-    return [] as T;
   }
 }
 
 export async function escreverArquivo<T>(nomeArquivo: string, dados: T): Promise<void> {
-  if (isVercel) {
-    // Na Vercel, atualizar dados em memória
+  try {
+    await ensureDataDir();
+    const caminho = path.join(DATA_DIR, nomeArquivo);
+    await fsPromises.writeFile(caminho, JSON.stringify(dados, null, 2), 'utf-8');
+  } catch (error) {
+    console.error(`Erro ao escrever arquivo ${nomeArquivo}:`, error);
+    // Se não for possível escrever, atualizar dados em memória
     switch (nomeArquivo) {
       case 'sites.json':
         sitesInMemory = dados as Site[];
@@ -112,16 +104,6 @@ export async function escreverArquivo<T>(nomeArquivo: string, dados: T): Promise
         monitoramentoInMemory = dados as Record<string, SiteStatus>;
         break;
     }
-    return;
-  }
-
-  try {
-    await ensureDataDir();
-    const caminho = path.join(DATA_DIR, nomeArquivo);
-    await fs.writeFile(caminho, JSON.stringify(dados, null, 2), 'utf-8');
-  } catch (error) {
-    console.error(`Erro ao escrever arquivo ${nomeArquivo}:`, error);
-    throw error;
   }
 }
 
