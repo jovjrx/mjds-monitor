@@ -1,5 +1,8 @@
 import axios, { AxiosResponse } from 'axios';
 
+const DEFAULT_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36';
+
 export interface SiteStatus {
   id: string;
   url: string;
@@ -42,6 +45,9 @@ export async function verificarSite(site: Site): Promise<SiteStatus> {
       timeout: 10000,
       maxRedirects: 5,
       validateStatus: () => true, // Aceita qualquer status code
+      headers: {
+        'User-Agent': DEFAULT_USER_AGENT,
+      },
     });
 
     const responseTime = Date.now() - startTime;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { obterTipos, salvarTipos, gerarId } from '../../../../utils/fileManager';
+import { obterTipos, salvarTipos, gerarId, atualizarTipo } from '../../../../utils/fileManager';
 import { Tipo } from '../../../../utils/verificarSite';
 
 export async function GET() {
@@ -83,4 +83,35 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, ...dados } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'ID é obrigatório' },
+        { status: 400 }
+      );
+    }
+
+    const tipoAtualizado = await atualizarTipo(id, dados);
+
+    if (!tipoAtualizado) {
+      return NextResponse.json(
+        { success: false, error: 'Tipo não encontrado' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, data: tipoAtualizado });
+  } catch (error: any) {
+    console.error('Erro ao atualizar tipo:', error);
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
