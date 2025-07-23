@@ -124,6 +124,7 @@ export default function SiteStatusTable({ intervalSeconds }: SiteStatusTableProp
   useEffect(() => {
     carregarTipos();
     carregarMonitoramento();
+    verificarSites();
   }, []);
 
   useEffect(() => {
