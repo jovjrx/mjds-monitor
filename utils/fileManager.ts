@@ -151,4 +151,22 @@ export async function salvarMonitoramento(monitoramento: Record<string, SiteStat
 
 export function gerarId(): string {
   return Date.now().toString() + Math.random().toString(36).substr(2, 9);
-} 
+}
+
+export async function atualizarSite(id: string, dados: Partial<Site>): Promise<Site | null> {
+  const sites = await obterSites();
+  const index = sites.findIndex(site => site.id === id);
+  if (index === -1) return null;
+  sites[index] = { ...sites[index], ...dados };
+  await salvarSites(sites);
+  return sites[index];
+}
+
+export async function atualizarTipo(id: string, dados: Partial<Tipo>): Promise<Tipo | null> {
+  const tipos = await obterTipos();
+  const index = tipos.findIndex(tipo => tipo.id === id);
+  if (index === -1) return null;
+  tipos[index] = { ...tipos[index], ...dados };
+  await salvarTipos(tipos);
+  return tipos[index];
+}
