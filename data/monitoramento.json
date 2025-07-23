@@ -1,0 +1,44 @@
+{
+  "1": {
+    "id": "1",
+    "url": "https://prevcom.com.br",
+    "nome": "Prevcom",
+    "tipoId": "1",
+    "status": "frontdoor",
+    "statusCode": 403,
+    "cacheControl": "no-store",
+    "lastModified": "Wed, 23 Jul 2025 16:38:55 GMT",
+    "responseTime": 354,
+    "lastChecked": "2025-07-23T16:38:29.772Z",
+    "isAzureFrontDoor": true,
+    "isUsingCache": true
+  },
+  "2": {
+    "id": "2",
+    "url": "https://www.prevcommulti.com.br",
+    "nome": "Prevcom Multi",
+    "tipoId": "2",
+    "status": "frontdoor",
+    "statusCode": 403,
+    "cacheControl": "no-store",
+    "lastModified": "Wed, 23 Jul 2025 16:38:55 GMT",
+    "responseTime": 102,
+    "lastChecked": "2025-07-23T16:38:29.919Z",
+    "isAzureFrontDoor": true,
+    "isUsingCache": true
+  },
+  "17532880454567u5wkhwxf": {
+    "id": "17532880454567u5wkhwxf",
+    "url": "https://mjds.com.br",
+    "nome": "MJDS",
+    "tipoId": "1",
+    "status": "online",
+    "statusCode": 200,
+    "cacheControl": "private",
+    "lastModified": "Wed, 23 Jul 2025 16:38:55 GMT",
+    "responseTime": 571,
+    "lastChecked": "2025-07-23T16:38:29.922Z",
+    "isAzureFrontDoor": true,
+    "isUsingCache": true
+  }
+}

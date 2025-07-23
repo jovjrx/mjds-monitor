@@ -1,0 +1,23 @@
+[
+  {
+    "id": "1",
+    "url": "https://prevcom.com.br",
+    "nome": "Prevcom",
+    "tipoId": "1",
+    "ativo": true
+  },
+  {
+    "id": "2",
+    "url": "https://www.prevcommulti.com.br",
+    "nome": "Prevcom Multi",
+    "tipoId": "2",
+    "ativo": true
+  },
+  {
+    "id": "17532880454567u5wkhwxf",
+    "url": "https://mjds.com.br",
+    "nome": "MJDS",
+    "tipoId": "1",
+    "ativo": true
+  }
+]
