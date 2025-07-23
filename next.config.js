@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Configuração para Vercel
-  output: 'standalone',
-  
   // Headers para APIs
   async headers() {
     return [
@@ -15,17 +12,6 @@ const nextConfig = {
         ],
       },
     ];
-  },
-
-  // Configurações de build
-  experimental: {
-    // Otimizações para Vercel
-    optimizeCss: true,
-  },
-
-  // Configurações de imagens
-  images: {
-    domains: ['localhost'],
   },
 };
 
