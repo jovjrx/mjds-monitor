@@ -7,9 +7,9 @@
     "status": "frontdoor",
     "statusCode": 403,
     "cacheControl": "no-store",
-    "lastModified": "Wed, 23 Jul 2025 16:44:11 GMT",
-    "responseTime": 262,
-    "lastChecked": "2025-07-23T16:43:46.689Z",
+    "lastModified": "Wed, 23 Jul 2025 16:44:35 GMT",
+    "responseTime": 2577,
+    "lastChecked": "2025-07-23T16:44:07.521Z",
     "isAzureFrontDoor": true,
     "isUsingCache": true
   },
@@ -21,9 +21,9 @@
     "status": "frontdoor",
     "statusCode": 403,
     "cacheControl": "no-store",
-    "lastModified": "Wed, 23 Jul 2025 16:44:12 GMT",
-    "responseTime": 106,
-    "lastChecked": "2025-07-23T16:43:46.872Z",
+    "lastModified": "Wed, 23 Jul 2025 16:44:33 GMT",
+    "responseTime": 173,
+    "lastChecked": "2025-07-23T16:44:07.808Z",
     "isAzureFrontDoor": true,
     "isUsingCache": true
   },
@@ -35,9 +35,9 @@
     "status": "online",
     "statusCode": 200,
     "cacheControl": "private",
-    "lastModified": "Wed, 23 Jul 2025 16:44:12 GMT",
-    "responseTime": 442,
-    "lastChecked": "2025-07-23T16:43:46.881Z",
+    "lastModified": "Wed, 23 Jul 2025 16:44:33 GMT",
+    "responseTime": 563,
+    "lastChecked": "2025-07-23T16:44:07.817Z",
     "isAzureFrontDoor": true,
     "isUsingCache": true
   }
