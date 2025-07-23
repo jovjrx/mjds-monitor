@@ -4,8 +4,51 @@ import { Site, Tipo, SiteStatus } from './verificarSite';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 
+// Dados em memória para Vercel
+let sitesInMemory: Site[] = [
+  {
+    id: "1",
+    url: "https://www.google.com",
+    nome: "Google",
+    tipoId: "1",
+    ativo: true
+  },
+  {
+    id: "2",
+    url: "https://www.github.com",
+    nome: "GitHub",
+    tipoId: "2",
+    ativo: true
+  }
+];
+
+let tiposInMemory: Tipo[] = [
+  {
+    id: "1",
+    nome: "Institucional",
+    descricao: "Sites institucionais e corporativos"
+  },
+  {
+    id: "2", 
+    nome: "Comercial",
+    descricao: "Sites comerciais e e-commerce"
+  },
+  {
+    id: "3",
+    nome: "Painel",
+    descricao: "Painéis administrativos"
+  }
+];
+
+let monitoramentoInMemory: Record<string, SiteStatus> = {};
+
+// Verificar se estamos na Vercel (sem acesso ao sistema de arquivos)
+const isVercel = process.env.VERCEL === '1' || !fs.access;
+
 // Garantir que o diretório data existe
 async function ensureDataDir() {
+  if (isVercel) return;
+  
   try {
     await fs.access(DATA_DIR);
   } catch {
@@ -14,6 +57,20 @@ async function ensureDataDir() {
 }
 
 export async function lerArquivo<T>(nomeArquivo: string): Promise<T> {
+  if (isVercel) {
+    // Na Vercel, usar dados em memória
+    switch (nomeArquivo) {
+      case 'sites.json':
+        return sitesInMemory as T;
+      case 'tipos.json':
+        return tiposInMemory as T;
+      case 'monitoramento.json':
+        return monitoramentoInMemory as T;
+      default:
+        return [] as T;
+    }
+  }
+
   try {
     await ensureDataDir();
     const caminho = path.join(DATA_DIR, nomeArquivo);
@@ -42,6 +99,22 @@ export async function lerArquivo<T>(nomeArquivo: string): Promise<T> {
 }
 
 export async function escreverArquivo<T>(nomeArquivo: string, dados: T): Promise<void> {
+  if (isVercel) {
+    // Na Vercel, atualizar dados em memória
+    switch (nomeArquivo) {
+      case 'sites.json':
+        sitesInMemory = dados as Site[];
+        break;
+      case 'tipos.json':
+        tiposInMemory = dados as Tipo[];
+        break;
+      case 'monitoramento.json':
+        monitoramentoInMemory = dados as Record<string, SiteStatus>;
+        break;
+    }
+    return;
+  }
+
   try {
     await ensureDataDir();
     const caminho = path.join(DATA_DIR, nomeArquivo);
