@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { obterSites, salvarSites, gerarId } from '../../../../utils/fileManager';
+import { obterSites, salvarSites, gerarId, atualizarSite } from '../../../../utils/fileManager';
 import { Site } from '../../../../utils/verificarSite';
 
 export async function GET() {
@@ -85,4 +85,35 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, ...dados } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'ID é obrigatório' },
+        { status: 400 }
+      );
+    }
+
+    const siteAtualizado = await atualizarSite(id, dados);
+
+    if (!siteAtualizado) {
+      return NextResponse.json(
+        { success: false, error: 'Site não encontrado' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, data: siteAtualizado });
+  } catch (error: any) {
+    console.error('Erro ao atualizar site:', error);
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
