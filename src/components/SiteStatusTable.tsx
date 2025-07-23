@@ -10,6 +10,7 @@ interface SiteStatusTableProps {
 export default function SiteStatusTable({ intervalSeconds }: SiteStatusTableProps) {
   const [monitoramento, setMonitoramento] = useState<Record<string, SiteStatus>>({});
   const [tipos, setTipos] = useState<Tipo[]>([]);
+  const [selectedTipo, setSelectedTipo] = useState<string>('all');
   const [loading, setLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<string>('');
   const [previousStatus, setPreviousStatus] = useState<Record<string, string>>({});
@@ -132,7 +133,9 @@ export default function SiteStatusTable({ intervalSeconds }: SiteStatusTableProp
     return () => clearInterval(interval);
   }, [intervalSeconds, previousStatus]);
 
-  const sites = Object.values(monitoramento);
+  const sites = Object.values(monitoramento)
+    .filter(site => selectedTipo === 'all' || site.tipoId === selectedTipo)
+    .sort((a, b) => a.nome.localeCompare(b.nome));
 
   return (
     <div className="space-y-6">
@@ -157,7 +160,7 @@ export default function SiteStatusTable({ intervalSeconds }: SiteStatusTableProp
               </p>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               onClick={tocarAlerta}
               className="px-3 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 text-sm"
@@ -182,6 +185,16 @@ export default function SiteStatusTable({ intervalSeconds }: SiteStatusTableProp
                 'Verificar Agora'
               )}
             </button>
+            <select
+              value={selectedTipo}
+              onChange={e => setSelectedTipo(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white text-gray-900"
+            >
+              <option value="all">Todos</option>
+              {tipos.map(tipo => (
+                <option key={tipo.id} value={tipo.id}>{tipo.nome}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
