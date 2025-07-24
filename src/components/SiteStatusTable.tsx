@@ -49,13 +49,13 @@ interface OfflineStats {
   averageDowntime: number;
 }
 
-export default function SiteStatusTable({ 
-  intervalSeconds, 
-  onEditSite, 
-  onRefresh, 
-  loading, 
-  lastUpdate, 
-  error 
+export default function SiteStatusTable({
+  intervalSeconds,
+  onEditSite,
+  onRefresh,
+  loading,
+  lastUpdate,
+  error
 }: SiteStatusTableProps) {
   const [monitoramento, setMonitoramento] = useState<Record<string, SiteStatus>>({});
   const [tipos, setTipos] = useState<Tipo[]>([]);
@@ -64,10 +64,10 @@ export default function SiteStatusTable({
   const [selectedTab, setSelectedTab] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { isOpen, onToggle } = useDisclosure();
-  const { 
-    isOpen: isOfflineModalOpen, 
-    onOpen: onOfflineModalOpen, 
-    onClose: onOfflineModalClose 
+  const {
+    isOpen: isOfflineModalOpen,
+    onOpen: onOfflineModalOpen,
+    onClose: onOfflineModalClose
   } = useDisclosure();
 
   const bgColor = useColorModeValue('white', 'gray.800');
@@ -126,7 +126,7 @@ export default function SiteStatusTable({
     try {
       const response = await fetch('/api/historico?limit=50');
       const data = await response.json();
-      
+
       if (data.success) {
         setOfflineHistory(data.data);
         setOfflineStats(data.stats);
@@ -140,18 +140,18 @@ export default function SiteStatusTable({
     try {
       const response = await fetch('/api/verificar');
       const data = await response.json();
-      
+
       if (data.success) {
         const monitoramentoObj: Record<string, SiteStatus> = {};
-        
+
         if (Array.isArray(data.data)) {
           data.data.forEach((site: SiteStatus) => {
             monitoramentoObj[site.id] = site;
           });
         }
-        
+
         setMonitoramento(monitoramentoObj);
-        
+
         // Atualizar estatísticas
         if (data.offlineStats) {
           setOfflineStats(data.offlineStats);
@@ -159,7 +159,7 @@ export default function SiteStatusTable({
         if (data.currentOfflineSites) {
           setOfflineHistory(data.currentOfflineSites);
         }
-        
+
         // Atualizar última verificação se for verificação automática
         if (data.timestamp) {
           // Chamar onRefresh para atualizar o timestamp no header
@@ -175,7 +175,7 @@ export default function SiteStatusTable({
     try {
       const response = await fetch('/api/tipos');
       const data = await response.json();
-      
+
       if (data.success) {
         setTipos(data.data);
       }
@@ -188,7 +188,7 @@ export default function SiteStatusTable({
     try {
       const response = await fetch('/api/monitoramento');
       const data = await response.json();
-      
+
       if (data.success) {
         setMonitoramento(data.data);
       }
@@ -223,7 +223,7 @@ export default function SiteStatusTable({
   const SiteTable = ({ sitesToShow }: { sitesToShow: SiteStatus[] }) => (
     <Box flex="1" h="100%" display="flex" flexDirection="column">
       <Box flex="1" overflow="auto" minH="0">
-        <Table variant="simple" size="md" minW="1200px">
+        <Table variant="striped" size="md" minW="1200px">
           <Thead position="sticky" top={0} zIndex={10} bg={headerBg}>
             <Tr>
               <Th minW="200px" p={1} px={2}>Site</Th>
@@ -251,13 +251,14 @@ export default function SiteStatusTable({
                 <Td minW="120px" p={1} px={2} textAlign={'center'}>
                   <VStack align="center" spacing={1}>
                     <HStack spacing={2}>
-                      <Text fontSize="lg">{obterStatusIcon(site.status)}</Text>
+
                       <Badge
+                        rounded={'lg'}
                         colorScheme={obterStatusColor(site.status)}
                         variant="subtle"
                       >
-                        {site.status === 'online' ? 'Online' :
-                         site.status === 'offline' ? 'Offline' : 'Rate Limited'}
+                        {site.status === 'online' ? '✅ Online' :
+                          site.status === 'offline' ? '❌ Offline' : '⚠️ Rate Limited'}
                       </Badge>
                     </HStack>
                     {site.statusCode > 0 && (
@@ -268,13 +269,14 @@ export default function SiteStatusTable({
                   </VStack>
                 </Td>
                 <Td minW="120px" p={1} px={2} textAlign={'center'}>
-                  <Badge colorScheme="blue" variant="subtle">
+                  <Badge rounded={'lg'} colorScheme="blue" variant="subtle">
                     {obterNomeTipo(site.tipoId)}
                   </Badge>
                 </Td>
                 <Td minW="120px" p={1} px={2} textAlign={'center'}>
                   <Badge
-                    colorScheme={site.isAzureFrontDoor ? 'blue' : 'gray'}
+                    rounded={'lg'}
+                    colorScheme={site.isAzureFrontDoor ? 'green' : 'gray'}
                     variant="subtle"
                   >
                     {site.isAzureFrontDoor ? '✅ Sim' : '❌ Não'}
@@ -282,7 +284,7 @@ export default function SiteStatusTable({
                 </Td>
                 <Td minW="120px" p={1} px={2} textAlign={'center'}>
                   <VStack align="center" spacing={1}>
-                    <Badge
+                    <Badge rounded={'lg'}
                       colorScheme={site.isUsingCache ? 'green' : 'gray'}
                       variant="subtle"
                     >
@@ -303,14 +305,15 @@ export default function SiteStatusTable({
                 <Td minW="150px" p={1} px={2} textAlign={'center'}>
                   {site.cdnVersion ? (
                     <VStack align="start" spacing={1}>
-                      <Badge 
-                        colorScheme={site.cdnVersion === 'Padrão' ? 'gray' : 'purple'} 
+                      <Badge
+                        rounded={'lg'}
+                        colorScheme={site.cdnVersion === 'Padrão' ? 'gray' : 'purple'}
                         variant="subtle"
                       >
                         {site.cdnVersion}
                       </Badge>
                       {site.cdnLink && (
-                          <Text fontSize="xs" color={'gray.500'} noOfLines={1}>
+                        <Text fontSize="xs" color={'gray.500'} noOfLines={1}>
                           {site.cdnLink}
                         </Text>
                       )}
@@ -324,7 +327,7 @@ export default function SiteStatusTable({
                     fontFamily="mono"
                     color={
                       site.responseTime < 1000 ? 'green.500' :
-                      site.responseTime < 3000 ? 'yellow.500' : 'red.500'
+                        site.responseTime < 3000 ? 'yellow.500' : 'red.500'
                     }
                   >
                     {formatarTempo(site.responseTime)}
@@ -377,15 +380,15 @@ export default function SiteStatusTable({
         <Alert
           status="error"
           borderRadius="lg"
-          bg={'red.500'}
+          bg={'red.50'}
           border="1px"
-          borderColor={'red.700'}
+          borderColor={'red.100'}
           mb={4}
         >
-          <AlertIcon /> 
+          <AlertIcon />
           <Box flex="1">
             <Text fontWeight="medium" color={'red.800'}>
-              ⚠️ {sitesOffline.length} site(s) offline detectado(s)
+              {sitesOffline.length} site(s) offline detectado(s)
             </Text>
             <Text fontSize="sm" color={'red.300'}>
               Clique em "Ver Sites Offline" para mais detalhes
@@ -402,20 +405,9 @@ export default function SiteStatusTable({
         </Alert>
       )}
 
-      <Collapse in={isOpen}>
-        <Box mb={4}>
-          <OfflineHistory
-            history={offlineHistory}
-            stats={offlineStats || { totalIncidents: 0, currentOffline: 0, totalOfflineTime: 0, averageDowntime: 0 }}
-            onRefresh={carregarHistorico}
-            onEditSite={onEditSite}
-          />
-        </Box>
-      </Collapse>
-
       <Box
         bg={bgColor}
-        borderRadius="lg"
+        borderRadius="md"
         boxShadow="sm"
         border="1px"
         borderColor={borderColor}
@@ -448,19 +440,19 @@ export default function SiteStatusTable({
             </VStack>
           </Box>
         ) : (
-          <Tabs 
-            index={selectedTab} 
+          <Tabs
+            index={selectedTab}
             onChange={setSelectedTab}
             flex="1"
             display="flex"
-            variant={'soft-rounded'}
+            variant={'solid-rounded'}
             flexDirection="column"
             overflow="hidden"
             h="100%"
           >
             <TabList p={2} bg={bgColor} borderColor={borderColor}>
               {sitesPorTipo.map(({ tipo, sites: sitesDoTipo }, index) => (
-                <Tab key={tipo.id}>
+                <Tab key={tipo.id} rounded={'md'}>
                   <Text fontSize="sm">{tipo.nome} ({sitesDoTipo.length})</Text>
                 </Tab>
               ))}
