@@ -19,7 +19,6 @@ import {
 } from '@chakra-ui/react';
 import { ExternalLinkIcon, EditIcon } from '@chakra-ui/icons';
 import { SiteStatus } from '../../utils/verificarSite';
-import { useState, useEffect } from 'react';
 
 interface OfflineSitesModalProps {
   isOpen: boolean;
@@ -42,10 +41,16 @@ export default function OfflineSitesModal({
 
   const obterStatusColor = (status: string) => {
     switch (status) {
-      case 'online': return 'green';
-      case 'offline': return 'red';
-      case 'rate_limited': return 'yellow';
-      default: return 'gray';
+      case 'online':
+        return 'green';
+      case 'offline':
+        return 'red';
+      case 'rate_limited':
+        return 'yellow';
+      case 'slow':
+        return 'orange';
+      default:
+        return 'gray';
     }
   };
 
@@ -57,6 +62,21 @@ export default function OfflineSitesModal({
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  const downloadLog = async (type: 'offline' | 'slow') => {
+    try {
+      const res = await fetch(`/api/log/${type}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${type}_log.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Erro ao baixar log', e);
+    }
+  };
+
   // Remover estados e useEffects relacionados ao sessionStorage
 
   return (
@@ -64,13 +84,19 @@ export default function OfflineSitesModal({
       <ModalOverlay />
       <ModalContent bg={bgColor}>
         <ModalHeader borderBottom="1px" borderColor={borderColor}>
-          <HStack spacing={3}>
-            <Text fontSize="lg" fontWeight="bold" color="red.500">
-              Sites Offline
-            </Text>
-            <Badge colorScheme="red" rounded="lg" px={2} variant="solid" size={'md'} fontSize="xs">
-              {sitesOffline.length} site(s)
-            </Badge>
+          <HStack spacing={3} justify="space-between">
+            <HStack spacing={3}>
+              <Text fontSize="lg" fontWeight="bold" color="red.500">
+                Sites Offline ou Lentos
+              </Text>
+              <Badge colorScheme="red" rounded="lg" px={2} variant="solid" size={'md'} fontSize="xs">
+                {sitesOffline.length} site(s)
+              </Badge>
+            </HStack>
+            <HStack spacing={2}>
+              <Button size="xs" onClick={() => downloadLog('offline')}>Log Offline</Button>
+              <Button size="xs" onClick={() => downloadLog('slow')}>Log Lento</Button>
+            </HStack>
           </HStack>
         </ModalHeader>
         <ModalCloseButton />
@@ -107,8 +133,13 @@ export default function OfflineSitesModal({
                           colorScheme={obterStatusColor(site.status)}
                           variant="solid"
                         >
-                          {site.status === 'online' ? 'Online' :
-                           site.status === 'offline' ? 'Offline' : 'Rate Limited'}
+                          {site.status === 'online'
+                            ? 'Online'
+                            : site.status === 'offline'
+                            ? 'Offline'
+                            : site.status === 'slow'
+                            ? 'Lento'
+                            : 'Rate Limited'}
                         </Badge>
                       </HStack>
                     </HStack>

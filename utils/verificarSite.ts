@@ -8,7 +8,7 @@ export interface SiteStatus {
   url: string;
   nome: string;
   tipoId: string;
-  status: 'online' | 'offline' | 'rate_limited';
+  status: 'online' | 'offline' | 'rate_limited' | 'slow';
   statusCode: number;
   cdnVersion?: string;
   cdnLink?: string;
@@ -67,13 +67,17 @@ export async function verificarSite(site: Site): Promise<SiteStatus> {
     const { status: statusCode, headers, data: html } = response;
 
     // Determinar status baseado no código de resposta
-    let status: 'online' | 'offline' | 'rate_limited' = 'online';
+    let status: 'online' | 'offline' | 'rate_limited' | 'slow' = 'online';
     if (statusCode >= 400) {
       if (statusCode === 429) {
         status = 'rate_limited';
       } else {
         status = 'offline';
       }
+    }
+
+    if (status === 'online' && responseTime >= 10000) {
+      status = 'slow';
     }
 
     // Extrair informações dos headers

@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { obterSites, salvarMonitoramento, obterMonitoramento } from '../../../../utils/fileManager';
 import { verificarTodosSites } from '../../../../utils/verificarSite';
 import { OfflineHistoryManager } from '../../../../utils/offlineHistory';
+import { SlowHistoryManager } from '../../../../utils/slowHistory';
 
 export async function GET() {
   try {
     const sites = await obterSites();
     const historyManager = new OfflineHistoryManager();
+    const slowHistoryManager = new SlowHistoryManager();
     
     if (sites.length === 0) {
       return NextResponse.json({ 
@@ -25,7 +27,7 @@ export async function GET() {
     // Verificar mudanças de status e registrar no histórico
     resultados.forEach(resultado => {
       const statusAnterior = monitoramentoAnterior[resultado.id]?.status;
-      
+
       if (statusAnterior === 'online' && resultado.status === 'offline') {
         // Site ficou offline - registrar no histórico
         historyManager.siteWentOffline(
@@ -37,7 +39,16 @@ export async function GET() {
         );
       } else if (statusAnterior === 'offline' && resultado.status === 'online') {
         // Site voltou online - fechar registro no histórico
-        historyManager.siteWentOnline(resultado.id); 
+        historyManager.siteWentOnline(resultado.id);
+      }
+
+      if (resultado.status === 'slow') {
+        slowHistoryManager.recordSlow(
+          resultado.id,
+          resultado.nome,
+          resultado.url,
+          resultado.responseTime
+        );
       }
     });
     

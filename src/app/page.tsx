@@ -76,7 +76,11 @@ export default function Home() {
 
   // Sites offline com propriedade visto
   const sitesOffline = Object.values(monitoramento)
-    .filter(site => site.status === 'offline' || site.status === 'rate_limited')
+    .filter(site =>
+      site.status === 'offline' ||
+      site.status === 'rate_limited' ||
+      site.status === 'slow'
+    )
     .map(site => ({
       ...site,
       visto: getOfflineSeen().includes(site.id)
@@ -158,7 +162,7 @@ export default function Home() {
             <AlertIcon />
             <Box flex="1">
               <Text fontWeight="medium" color={alertText}>
-                {sitesOfflineNaoVistos.length} site(s) offline detectado(s)
+                {sitesOfflineNaoVistos.length} site(s) com problema detectado(s)
               </Text>
               <Text fontSize="sm" color={alertSubText}>
                 Clique em "Ver Sites Offline" para mais detalhes
