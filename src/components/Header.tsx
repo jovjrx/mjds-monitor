@@ -52,7 +52,7 @@ export default function Header({
 
   return (
     <Box
-      bg={bgColor}
+      bg={'blue.700'}
       borderBottom="1px"
       borderColor={borderColor}
       boxShadow="sm"
@@ -60,7 +60,7 @@ export default function Header({
       <Container maxW="full">
         <Flex align="center" justify="space-between" py={4}>
           <Flex align="center">
-            <Heading size="lg" color={useColorModeValue('gray.800', 'white')}>
+            <Heading size="lg" fontWeight={'light'} color={'white'}>
               MJDS Monitor
             </Heading>
           </Flex>
@@ -68,7 +68,7 @@ export default function Header({
           {/* Desktop Menu */}
           <HStack spacing={2} display={{ base: 'none', md: 'flex' }}>
             <VStack align="start" spacing={1}>
-              <Text fontSize="sm" color={textColor}>
+              <Text fontSize="sm" color={'white'}>
                 Últ. att: {lastUpdate || 'Nunca'}
               </Text>
               {error && (
