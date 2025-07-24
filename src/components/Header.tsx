@@ -65,7 +65,6 @@ export default function Header({
             </Heading>
           </Flex>
 
-          {/* Desktop Menu */}
           <HStack spacing={2} display={{ base: 'none', md: 'flex' }}>
             <VStack align="start" spacing={1}>
               <Text fontSize="sm" color={'white'}>
@@ -110,21 +109,21 @@ export default function Header({
             </Button>
           </HStack>
 
-          {/* Mobile Menu Button */}
           <IconButton
             display={{ base: 'flex', md: 'none' }}
             onClick={onToggle}
+            size="sm"
             icon={isOpen ? <CloseIcon /> : <HamburgerIcon />}
-            variant="ghost"
+            variant="outline"
+            colorScheme="whiteAlpha"
             aria-label="Abrir Menu"
           />
         </Flex>
 
-        {/* Mobile Menu */}
         <Box display={{ base: isOpen ? 'block' : 'none', md: 'none' }} pb={4}>
-          <VStack spacing={3} align="stretch">
-            <VStack align="start" spacing={1} px={4}>
-              <Text fontSize="sm" color={textColor}>
+          <VStack spacing={2} align="stretch">
+            <VStack align="start" spacing={1}>
+              <Text fontSize="sm" color={'white'}>
                 Última atualização: {lastUpdate || 'Nunca'}
               </Text>
               {error && (
@@ -135,7 +134,7 @@ export default function Header({
               )}
             </VStack>
             
-            <HStack spacing={2} px={4}>
+            <HStack spacing={2}>
               <Tooltip label="Testar Alerta Sonoro">
                 <IconButton
                   aria-label="Testar Alerta"
@@ -150,7 +149,7 @@ export default function Header({
                 onClick={onRefresh}
                 isLoading={loading}
                 loadingText="Verificando..."
-                colorScheme="blue"
+                colorScheme="green"
                 leftIcon={<RepeatIcon />}
                 size="sm"
                 flex={1}
@@ -159,17 +158,17 @@ export default function Header({
               </Button>
             </HStack>
             
-            <VStack spacing={2} px={4}>
-              <Button onClick={onConfigClick} size="sm" width="full" justifyContent="flex-start">
+            <HStack spacing={2}>
+              <Button onClick={onConfigClick} size="sm" width="full" justifyContent="center">
                 Configurar
               </Button>
-              <Button onClick={onAddSiteClick} colorScheme="blue" size="sm" width="full" justifyContent="flex-start">
+              <Button onClick={onAddSiteClick} colorScheme="blue" size="sm" width="full" justifyContent="center">
                 Adicionar Site
               </Button>
-              <Button onClick={onAddTipoClick} colorScheme="purple" size="sm" width="full" justifyContent="flex-start">
+              <Button onClick={onAddTipoClick} colorScheme="purple" size="sm" width="full" justifyContent="center">
                 Adicionar Tipo
               </Button>
-            </VStack>
+            </HStack>
           </VStack>
         </Box>
       </Container>
