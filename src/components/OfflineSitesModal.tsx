@@ -83,7 +83,7 @@ export default function OfflineSitesModal({
     <Modal isOpen={isOpen && sitesOffline.length > 0} onClose={onClose} size="xl" scrollBehavior="inside">
       <ModalOverlay />
       <ModalContent bg={bgColor}>
-        <ModalHeader borderBottom="1px" borderColor={borderColor}">
+        <ModalHeader borderBottom="1px" borderColor={borderColor}>
           <HStack spacing={3} justify="space-between">
             <HStack spacing={3}>
               <Text fontSize="lg" fontWeight="bold" color="red.500">

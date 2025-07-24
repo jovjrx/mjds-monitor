@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { OfflineHistoryManager } from '../../../../../utils/offlineHistory';
 import { SlowHistoryManager } from '../../../../../utils/slowHistory';
 
-export async function GET(request: NextRequest, { params }: { params: { type: string } }) {
-  const { type } = params;
+export async function GET(request: Request, context: any) {
+  const { type } = context.params;
   let text = '';
 
   if (type === 'offline') {
