@@ -6,6 +6,7 @@ import {
   ModalContent,
   ModalHeader,
   ModalBody,
+  ModalFooter,
   ModalCloseButton,
   VStack,
   HStack,
@@ -92,10 +93,6 @@ export default function OfflineSitesModal({
               <Badge colorScheme="red" rounded="lg" px={2} variant="solid" size={'md'} fontSize="xs">
                 {sitesOffline.length} site(s)
               </Badge>
-            </HStack>
-            <HStack spacing={2}>
-              <Button size="xs" onClick={() => downloadLog('offline')}>Log Offline</Button>
-              <Button size="xs" onClick={() => downloadLog('slow')}>Log Lento</Button>
             </HStack>
           </HStack>
         </ModalHeader>
@@ -201,7 +198,13 @@ export default function OfflineSitesModal({
             </VStack>
           )}
         </ModalBody>
+        <ModalFooter borderTop="1px" borderColor={borderColor}>
+          <HStack spacing={2} w="full" justify="flex-end">
+            <Button size="sm" onClick={() => downloadLog('offline')}>Log Offline</Button>
+            <Button size="sm" onClick={() => downloadLog('slow')}>Log Lento</Button>
+          </HStack>
+        </ModalFooter>
       </ModalContent>
     </Modal>
   );
-} 
+}
