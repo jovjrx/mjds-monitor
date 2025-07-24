@@ -5,7 +5,6 @@ import { Site } from '../../../../utils/verificarSite';
 export async function GET() {
   try {
     const sites = await obterSites();
-    console.log('Sites obtidos:', sites);
     return NextResponse.json({ success: true, data: sites });
   } catch (error: any) {
     console.error('Erro ao obter sites:', error);
@@ -19,7 +18,6 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('Dados recebidos:', body);
     
     const { url, nome, tipoId } = body;
     
@@ -42,7 +40,6 @@ export async function POST(request: NextRequest) {
     sites.push(novoSite);
     await salvarSites(sites);
     
-    console.log('Site adicionado:', novoSite);
     return NextResponse.json({ success: true, data: novoSite });
   } catch (error: any) {
     console.error('Erro ao adicionar site:', error);

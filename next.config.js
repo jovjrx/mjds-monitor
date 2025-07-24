@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Headers para APIs
+
+  output: 'standalone',
   async headers() {
     return [
       {

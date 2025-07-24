@@ -5,7 +5,6 @@ import { Tipo } from '../../../../utils/verificarSite';
 export async function GET() {
   try {
     const tipos = await obterTipos();
-    console.log('Tipos obtidos:', tipos);
     return NextResponse.json({ success: true, data: tipos });
   } catch (error: any) {
     console.error('Erro ao obter tipos:', error);
@@ -19,7 +18,6 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('Dados recebidos:', body);
     
     const { nome, descricao } = body;
     
@@ -39,8 +37,7 @@ export async function POST(request: NextRequest) {
     
     tipos.push(novoTipo);
     await salvarTipos(tipos);
-    
-    console.log('Tipo adicionado:', novoTipo);
+      
     return NextResponse.json({ success: true, data: novoTipo });
   } catch (error: any) {
     console.error('Erro ao adicionar tipo:', error);

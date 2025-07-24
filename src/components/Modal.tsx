@@ -1,5 +1,15 @@
 'use client';
 
+import {
+  Modal as ChakraModal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  useColorModeValue,
+} from '@chakra-ui/react';
+
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -8,17 +18,34 @@ interface ModalProps {
 }
 
 export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
-  if (!isOpen) return null;
+  const bgColor = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-lg">
-        <div className="flex justify-between items-center border-b px-4 py-2">
-          <h3 className="text-lg font-medium">{title}</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
-        </div>
-        <div className="p-4">{children}</div>
-      </div>
-    </div>
+    <ChakraModal isOpen={isOpen} onClose={onClose} isCentered size="lg">
+      <ModalOverlay bg="blackAlpha.300" backdropFilter="blur(10px)" />
+      <ModalContent
+        bg={bgColor}
+        border="1px"
+        borderColor={borderColor}
+        borderRadius="xl"
+        boxShadow="xl"
+        mx={4}
+      >
+        <ModalHeader
+          borderBottom="1px"
+          borderColor={borderColor}
+          pb={4}
+          fontSize="lg"
+          fontWeight="semibold"
+        >
+          {title}
+        </ModalHeader>
+        <ModalCloseButton />
+        <ModalBody py={6}>
+          {children}
+        </ModalBody>
+      </ModalContent>
+    </ChakraModal>
   );
 }

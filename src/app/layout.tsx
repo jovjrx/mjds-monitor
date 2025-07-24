@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import { Providers } from './providers'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'MJDS Monitor - Sistema de Monitoramento de Sites',
-  description: 'Sistema de monitoramento de sites com verificação de CDN e status',
+  title: 'MJDS Monitor',
+  description: 'Sistema de monitoramento de sites',
 }
 
 export default function RootLayout({
@@ -16,7 +17,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className} suppressHydrationWarning={true}>
+        <Providers>
+          {children}
+        </Providers>
+      </body>
     </html>
   )
 } 

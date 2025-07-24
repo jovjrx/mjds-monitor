@@ -1,76 +1,122 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import {
+  VStack,
+  HStack,
+  FormControl,
+  FormLabel,
+  Input,
+  Select,
+  Button,
+  Alert,
+  AlertIcon,
+  useColorModeValue,
+  Text,
+} from '@chakra-ui/react';
 import { Tipo } from '../../utils/verificarSite';
 
 interface SiteFormProps {
-  onSiteAdded: () => void;
   onClose: () => void;
+  editingSiteId?: string;
 }
 
-export default function SiteForm({ onSiteAdded, onClose }: SiteFormProps) {
-  const [url, setUrl] = useState('');
+export default function SiteForm({ onClose, editingSiteId }: SiteFormProps) {
   const [nome, setNome] = useState('');
+  const [url, setUrl] = useState('');
   const [tipoId, setTipoId] = useState('');
   const [tipos, setTipos] = useState<Tipo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    carregarTipos();
+    if (editingSiteId) {
+      setIsEditing(true);
+      carregarSiteParaEdicao(editingSiteId);
+    }
+  }, [editingSiteId]);
 
   const carregarTipos = async () => {
     try {
       const response = await fetch('/api/tipos');
       const data = await response.json();
-
+      
       if (data.success) {
         setTipos(data.data);
-        if (data.data.length > 0) {
+        if (data.data.length > 0 && !tipoId) {
           setTipoId(data.data[0].id);
         }
-      } else {
-        setError('Erro ao carregar tipos');
       }
-    } catch (err) {
-      console.error('Erro ao carregar tipos:', err);
-      setError('Erro ao conectar com o servidor');
+    } catch (error) {
+      console.error('Erro ao carregar tipos:', error);
     }
   };
 
-  useEffect(() => {
-    carregarTipos();
-  }, []);
+  const carregarSiteParaEdicao = async (siteId: string) => {
+    try {
+      const response = await fetch('/api/sites');
+      const data = await response.json();
+      
+      if (data.success) {
+        const site = data.data.find((s: any) => s.id === siteId);
+        if (site) {
+          setNome(site.nome);
+          setUrl(site.url);
+          setTipoId(site.tipoId);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar site:', error);
+      setError('Erro ao carregar dados do site');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     setError('');
 
-    if (!url || !nome || !tipoId) {
+    if (!nome.trim() || !url.trim() || !tipoId) {
       setError('Todos os campos são obrigatórios');
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
     try {
-      const response = await fetch('/api/sites', {
-        method: 'POST',
+      const method = isEditing ? 'PUT' : 'POST';
+      const endpoint = '/api/sites';
+      
+      const requestBody = {
+        nome: nome.trim(),
+        url: url.trim(),
+        tipoId,
+        ativo: true,
+      };
+
+      // Adicionar ID ao body se estiver editando
+      if (isEditing && editingSiteId) {
+        (requestBody as any).id = editingSiteId;
+      }
+      
+      const response = await fetch(endpoint, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url, nome, tipoId }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setUrl('');
-        setNome('');
-        setTipoId(tipos[0]?.id || '');
-        onSiteAdded();
         onClose();
       } else {
-        setError(data.error || 'Erro ao adicionar site');
+        setError(data.error || 'Erro ao salvar site');
       }
-    } catch (err) {
-      console.error('Erro ao adicionar site:', err);
+    } catch (error) {
+      console.error('Erro ao salvar site:', error);
       setError('Erro ao conectar com o servidor');
     } finally {
       setLoading(false);
@@ -78,92 +124,95 @@ export default function SiteForm({ onSiteAdded, onClose }: SiteFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-sm text-red-600">{error}</p>
-        </div>
-      )}
+    <form onSubmit={handleSubmit}>
+      <VStack spacing={4} align="stretch">
+        <Text fontSize="lg" fontWeight="medium" color={useColorModeValue('gray.700', 'gray.300')}>
+          {isEditing ? 'Editar Site' : 'Adicionar Novo Site'}
+        </Text>
 
-      <div>
-        <label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-2">
-          Nome do Site *
-        </label>
-        <input
-          type="text"
-          id="nome"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
-          placeholder="Ex: Google"
-          required
-        />
-      </div>
+        {error && (
+          <Alert status="error" borderRadius="md">
+            <AlertIcon />
+            {error}
+          </Alert>
+        )}
 
-      <div>
-        <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-2">
-          URL *
-        </label>
-        <input
-          type="url"
-          id="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
-          placeholder="https://www.exemplo.com"
-          required
-        />
-      </div>
+        <FormControl isRequired>
+          <FormLabel fontSize="sm" color={useColorModeValue('gray.700', 'gray.300')}>
+            Nome do Site
+          </FormLabel>
+          <Input
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="Ex: Site Principal"
+            bg={useColorModeValue('white', 'gray.800')}
+            borderColor={useColorModeValue('gray.200', 'gray.700')}
+            _focus={{
+              borderColor: 'blue.500',
+              boxShadow: '0 0 0 1px var(--chakra-colors-blue-500)',
+            }}
+          />
+        </FormControl>
 
-      <div>
-        <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-2">
-          Tipo *
-        </label>
-        <select
-          id="tipo"
-          value={tipoId}
-          onChange={(e) => setTipoId(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
-          required
-        >
-          {tipos.length === 0 ? (
-            <option value="">Carregando tipos...</option>
-          ) : (
-            tipos.map((tipo) => (
+        <FormControl isRequired>
+          <FormLabel fontSize="sm" color={useColorModeValue('gray.700', 'gray.300')}>
+            URL
+          </FormLabel>
+          <Input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://exemplo.com"
+            bg={useColorModeValue('white', 'gray.800')}
+            borderColor={useColorModeValue('gray.200', 'gray.700')}
+            _focus={{
+              borderColor: 'blue.500',
+              boxShadow: '0 0 0 1px var(--chakra-colors-blue-500)',
+            }}
+          />
+        </FormControl>
+
+        <FormControl isRequired>
+          <FormLabel fontSize="sm" color={useColorModeValue('gray.700', 'gray.300')}>
+            Tipo
+          </FormLabel>
+          <Select
+            value={tipoId}
+            onChange={(e) => setTipoId(e.target.value)}
+            bg={useColorModeValue('white', 'gray.800')}
+            borderColor={useColorModeValue('gray.200', 'gray.700')}
+            _focus={{
+              borderColor: 'blue.500',
+              boxShadow: '0 0 0 1px var(--chakra-colors-blue-500)',
+            }}
+          >
+            {tipos.map((tipo) => (
               <option key={tipo.id} value={tipo.id}>
                 {tipo.nome}
               </option>
-            ))
-          )}
-        </select>
-      </div>
+            ))}
+          </Select>
+        </FormControl>
 
-      <div className="flex justify-end space-x-3 pt-4">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={loading || tipos.length === 0}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
-        >
-          {loading ? (
-            <span className="flex items-center gap-2">
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              Adicionando...
-            </span>
-          ) : (
-            'Adicionar Site'
-          )}
-        </button>
-      </div>
+        <HStack justify="flex-end" pt={4}>
+          <Button
+            type="button"
+            onClick={onClose}
+            colorScheme="gray"
+            size="md"
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            colorScheme="blue"
+            size="md"
+            isLoading={loading}
+            loadingText={isEditing ? "Salvando..." : "Adicionando..."}
+          >
+            {isEditing ? 'Salvar Alterações' : 'Adicionar Site'}
+          </Button>
+        </HStack>
+      </VStack>
     </form>
   );
 }

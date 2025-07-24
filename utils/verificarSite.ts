@@ -8,9 +8,10 @@ export interface SiteStatus {
   url: string;
   nome: string;
   tipoId: string;
-  status: 'online' | 'offline' | 'frontdoor';
+  status: 'online' | 'offline' | 'rate_limited';
   statusCode: number;
   cdnVersion?: string;
+  cdnLink?: string;
   cacheControl?: string;
   lastModified?: string;
   responseTime: number;
@@ -20,6 +21,18 @@ export interface SiteStatus {
   isUsingCache?: boolean;
   cacheAge?: number;
   cacheMaxAge?: number;
+}
+
+export interface SiteOfflineHistory {
+  id: string;
+  siteId: string;
+  siteName: string;
+  url: string;
+  wentOfflineAt: string;
+  wentOnlineAt?: string;
+  duration?: number; // em segundos
+  statusCode?: number;
+  error?: string;
 }
 
 export interface Site {
@@ -54,9 +67,13 @@ export async function verificarSite(site: Site): Promise<SiteStatus> {
     const { status: statusCode, headers, data: html } = response;
 
     // Determinar status baseado no código de resposta
-    let status: 'online' | 'offline' | 'frontdoor' = 'online';
+    let status: 'online' | 'offline' | 'rate_limited' = 'online';
     if (statusCode >= 400) {
-      status = statusCode === 403 || statusCode === 503 ? 'frontdoor' : 'offline';
+      if (statusCode === 429) {
+        status = 'rate_limited';
+      } else {
+        status = 'offline';
+      }
     }
 
     // Extrair informações dos headers
@@ -93,7 +110,7 @@ export async function verificarSite(site: Site): Promise<SiteStatus> {
     }
 
     // Verificar CDN no HTML
-    const cdnVersion = extrairVersaoCDN(html);
+    const cdnInfo = extrairVersaoCDN(html);
 
     return {
       id: site.id,
@@ -102,7 +119,8 @@ export async function verificarSite(site: Site): Promise<SiteStatus> {
       tipoId: site.tipoId,
       status,
       statusCode,
-      cdnVersion,
+      cdnVersion: cdnInfo.version,
+      cdnLink: cdnInfo.link,
       cacheControl,
       lastModified,
       responseTime,
@@ -131,30 +149,51 @@ export async function verificarSite(site: Site): Promise<SiteStatus> {
   }
 }
 
-function extrairVersaoCDN(html: string): string | undefined {
-  if (!html || typeof html !== 'string') return undefined;
+function extrairVersaoCDN(html: string): { version?: string; link?: string } {
+  if (!html || typeof html !== 'string') return {};
 
-  // Padrões para detectar CDN MJDS
+  // Padrões para detectar CDN MJDS com versão
   const cdnPatterns = [
-    /cdn\.mjds\.com\.br\/([^"'\s]+)/gi,
-    /ca\.mjds\.com\.br\/([^"'\s]+)/gi,
-    /cdn\.mjds\.com\.br\?v=([^"'\s&]+)/gi,
-    /ca\.mjds\.com\.br\?v=([^"'\s&]+)/gi,
+    /(?:cdn|ca|cs)\.mjds\.com\.br\/([^"'\s?]+)/gi,
+    /(?:cdn|ca|cs)\.mjds\.com\.br\?v=([^"'\s&]+)/gi,
+    /(?:cdn|ca|cs)\.mjds\.com\.br.*?[?&]v=([^"'\s&]+)/gi,
+    /(?:cdn|ca|cs)\.mjds\.com\.br\/([^"'\s?]+)\?/gi,
   ];
 
+  // Primeiro, procurar por versões específicas (v*)
   for (const pattern of cdnPatterns) {
     const match = html.match(pattern);
     if (match && match[1]) {
-      return match[1];
+      // Verificar se a versão contém um padrão v* (como v202505)
+      if (match[1].includes('v') && /\bv\d+\b/.test(match[1])) {
+        const versionMatch = match[1].match(/\bv\d+\b/);
+        if (versionMatch) {
+          return {
+            version: versionMatch[0],
+            link: match[0]
+          };
+        }
+      }
     }
   }
 
-  // Verificar se há referência à CDN sem versão específica
-  if (html.includes('cdn.mjds.com.br') || html.includes('ca.mjds.com.br')) {
-    return 'detectado';
+  // Se não encontrou versão específica, procurar por qualquer referência à CDN
+  const cdnDomains = ['cdn.mjds.com.br', 'ca.mjds.com.br', 'cs.mjds.com.br'];
+  
+  for (const domain of cdnDomains) {
+    if (html.includes(domain)) {
+      // Encontrar a URL completa da CDN
+      const urlPattern = new RegExp(`https?://${domain.replace(/\./g, '\\.')}[^"'\s]+`, 'gi');
+      const urlMatch = html.match(urlPattern);
+      
+      return {
+        version: 'Padrão',
+        link: urlMatch ? urlMatch[0] : `https://${domain}`
+      };
+    }
   }
 
-  return undefined;
+  return {};
 }
 
 export async function verificarTodosSites(sites: Site[]): Promise<SiteStatus[]> {

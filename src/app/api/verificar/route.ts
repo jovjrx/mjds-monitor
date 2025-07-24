@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { obterSites, salvarMonitoramento } from '../../../../utils/fileManager';
+import { obterSites, salvarMonitoramento, obterMonitoramento } from '../../../../utils/fileManager';
 import { verificarTodosSites } from '../../../../utils/verificarSite';
+import { OfflineHistoryManager } from '../../../../utils/offlineHistory';
 
 export async function GET() {
   try {
-    console.log('Iniciando verificação de sites...');
     const sites = await obterSites();
-    console.log('Sites para verificar:', sites);
+    const historyManager = new OfflineHistoryManager();
     
     if (sites.length === 0) {
-      console.log('Nenhum site encontrado para verificar');
       return NextResponse.json({ 
         success: true, 
         data: [],
@@ -18,8 +17,29 @@ export async function GET() {
       });
     }
     
+    // Obter status anterior para comparação
+    const monitoramentoAnterior = await obterMonitoramento();
+    
     const resultados = await verificarTodosSites(sites);
-    console.log('Resultados da verificação:', resultados);
+    
+    // Verificar mudanças de status e registrar no histórico
+    resultados.forEach(resultado => {
+      const statusAnterior = monitoramentoAnterior[resultado.id]?.status;
+      
+      if (statusAnterior === 'online' && resultado.status === 'offline') {
+        // Site ficou offline - registrar no histórico
+        historyManager.siteWentOffline(
+          resultado.id,
+          resultado.nome,
+          resultado.url,
+          resultado.statusCode,
+          resultado.error
+        );
+      } else if (statusAnterior === 'offline' && resultado.status === 'online') {
+        // Site voltou online - fechar registro no histórico
+        historyManager.siteWentOnline(resultado.id); 
+      }
+    });
     
     // Converter para formato de monitoramento
     const monitoramento: Record<string, any> = {};
@@ -30,9 +50,15 @@ export async function GET() {
     // Salvar no arquivo
     await salvarMonitoramento(monitoramento);
     
+    // Obter estatísticas de sites offline
+    const offlineStats = historyManager.getOfflineStats();
+    const currentOfflineSites = historyManager.getCurrentOfflineSites();
+    
     return NextResponse.json({ 
       success: true, 
       data: resultados,
+      offlineStats,
+      currentOfflineSites,
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {
