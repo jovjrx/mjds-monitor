@@ -1,6 +1,7 @@
 import fs, { promises as fsPromises } from 'fs';
 import path from 'path';
 import { Site, Tipo, SiteStatus } from './verificarSite';
+import NodeCache from 'node-cache';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 
@@ -12,19 +13,26 @@ let sitesInMemory: Site[] = [];
 let tiposInMemory: Tipo[] = [];
 let monitoramentoInMemory: Record<string, SiteStatus> = {};
 
-// Carregar dados dos arquivos para uso inicial
+// Instância do cache
+const cache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
+
+// Carregar dados dos arquivos para uso inicial e popular o cache
 try {
   const rawSites = fs.readFileSync(path.join(DATA_DIR, 'sites.json'), 'utf-8');
   sitesInMemory = JSON.parse(rawSites);
+  cache.set('sites', sitesInMemory);
 } catch {
   sitesInMemory = [];
+  cache.set('sites', []);
 }
 
 try {
   const rawTipos = fs.readFileSync(path.join(DATA_DIR, 'tipos.json'), 'utf-8');
   tiposInMemory = JSON.parse(rawTipos);
+  cache.set('tipos', tiposInMemory);
 } catch {
   tiposInMemory = [];
+  cache.set('tipos', []);
 }
 
 try {
@@ -33,8 +41,10 @@ try {
     'utf-8'
   );
   monitoramentoInMemory = JSON.parse(rawMonitoramento);
+  cache.set('monitoramento', monitoramentoInMemory);
 } catch {
   monitoramentoInMemory = {};
+  cache.set('monitoramento', {});
 }
 
 // Garantir que o diretório data existe
@@ -49,6 +59,12 @@ async function ensureDataDir() {
 }
 
 export async function lerArquivo<T>(nomeArquivo: string): Promise<T> {
+  // Primeiro tenta pegar do cache
+  const cacheKey = nomeArquivo.replace('.json', '');
+  const cached = cache.get(cacheKey);
+  if (cached !== undefined) {
+    return cached as T;
+  }
   try {
     await ensureDataDir();
     const caminho = path.join(DATA_DIR, nomeArquivo);
@@ -65,7 +81,9 @@ export async function lerArquivo<T>(nomeArquivo: string): Promise<T> {
     }
     
     const conteudo = await fsPromises.readFile(caminho, 'utf-8');
-    return JSON.parse(conteudo);
+    const parsed = JSON.parse(conteudo);
+    cache.set(cacheKey, parsed);
+    return parsed;
   } catch (error) {
     console.error(`Erro ao ler arquivo ${nomeArquivo}:`, error);
     // Falha ao ler do disco, retornar dados em memória
@@ -86,6 +104,9 @@ export async function lerArquivo<T>(nomeArquivo: string): Promise<T> {
 }
 
 export async function escreverArquivo<T>(nomeArquivo: string, dados: T): Promise<void> {
+  // Atualiza o cache primeiro
+  const cacheKey = nomeArquivo.replace('.json', '');
+  cache.set(cacheKey, dados);
   try {
     await ensureDataDir();
     const caminho = path.join(DATA_DIR, nomeArquivo);

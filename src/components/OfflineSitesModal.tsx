@@ -19,32 +19,26 @@ import {
 } from '@chakra-ui/react';
 import { ExternalLinkIcon, EditIcon } from '@chakra-ui/icons';
 import { SiteStatus } from '../../utils/verificarSite';
+import { useState, useEffect } from 'react';
 
 interface OfflineSitesModalProps {
   isOpen: boolean;
   onClose: () => void;
   sitesOffline: SiteStatus[];
-  onEditSite: (siteId: string) => void;
+  onMarcarComoVisto: (siteId: string) => void;
 }
+
+// Remover funções utilitárias de sessionStorage (agora gerenciado no componente pai)
 
 export default function OfflineSitesModal({
   isOpen,
   onClose,
   sitesOffline,
-  onEditSite,
+  onMarcarComoVisto,
 }: OfflineSitesModalProps) {
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const textColor = useColorModeValue('gray.600', 'gray.400');
-
-  const obterStatusIcon = (status: string) => {
-    switch (status) {
-      case 'online': return '🟢';
-      case 'offline': return '🔴';
-      case 'rate_limited': return '⚠️';
-      default: return '❓';
-    }
-  };
 
   const obterStatusColor = (status: string) => {
     switch (status) {
@@ -63,16 +57,18 @@ export default function OfflineSitesModal({
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  // Remover estados e useEffects relacionados ao sessionStorage
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl" scrollBehavior="inside">
+    <Modal isOpen={isOpen && sitesOffline.length > 0} onClose={onClose} size="xl" scrollBehavior="inside">
       <ModalOverlay />
       <ModalContent bg={bgColor}>
         <ModalHeader borderBottom="1px" borderColor={borderColor}>
           <HStack spacing={3}>
             <Text fontSize="lg" fontWeight="bold" color="red.500">
-              ⚠️ Sites Offline
+              Sites Offline
             </Text>
-            <Badge colorScheme="red" variant="solid" fontSize="sm">
+            <Badge colorScheme="red" rounded="lg" px={2} variant="solid" size={'md'} fontSize="xs">
               {sitesOffline.length} site(s)
             </Badge>
           </HStack>
@@ -94,7 +90,6 @@ export default function OfflineSitesModal({
                   border="1px"
                   borderColor={borderColor}
                   borderRadius="lg"
-                  bg={'gray.50'}
                 >
                   <VStack align="start" spacing={3}>
                     {/* Cabeçalho do site */}
@@ -108,7 +103,6 @@ export default function OfflineSitesModal({
                         </Text>
                       </VStack>
                       <HStack spacing={2}>
-                        <Text fontSize="lg">{obterStatusIcon(site.status)}</Text>
                         <Badge
                           colorScheme={obterStatusColor(site.status)}
                           variant="solid"
@@ -146,7 +140,7 @@ export default function OfflineSitesModal({
                     </HStack>
 
                     {/* Ações */}
-                    <HStack spacing={2} pt={2}>
+                    <HStack spacing={2} pt={2} justify="space-between" w="full" align="center">
                       <Tooltip label="Abrir Site">
                         <IconButton
                           aria-label="Abrir site"
@@ -157,19 +151,18 @@ export default function OfflineSitesModal({
                           variant="outline"
                         />
                       </Tooltip>
-                      <Tooltip label="Editar Site">
-                        <IconButton
-                          aria-label="Editar site"
-                          icon={<EditIcon />}
-                          onClick={() => {
-                            onEditSite(site.id);
-                            onClose();
-                          }}
+                      {(site as any).visto ? (
+                        <Badge colorScheme="green" p={1.5} rounded="lg" px={2} variant="subtle" fontSize="sm">Visto</Badge>
+                      ) : (
+                        <Button
                           size="sm"
-                          colorScheme="gray"
+                          colorScheme="green"
                           variant="outline"
-                        />
-                      </Tooltip>
+                          onClick={() => onMarcarComoVisto(site.id)}
+                        >
+                          Marcar como visto
+                        </Button>
+                      )}
                     </HStack>
                   </VStack>
                 </Box>

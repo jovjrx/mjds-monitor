@@ -1,48 +1,55 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Flex, 
-  Button, 
-  useDisclosure, 
-  IconButton, 
-  HStack, 
-  Text, 
-  useColorModeValue, 
+import {
+  Box,
+  Flex,
+  Button,
+  useDisclosure,
+  IconButton,
+  HStack,
+  Text,
+  useColorModeValue,
   Container,
   VStack,
   Heading,
   Tooltip,
   Alert,
   AlertIcon,
+  ButtonGroup,
 } from '@chakra-ui/react';
-import { HamburgerIcon, CloseIcon, RepeatIcon, ViewIcon } from '@chakra-ui/icons';
+import { HamburgerIcon, CloseIcon, RepeatIcon, ViewIcon, SunIcon, MoonIcon, BellIcon, SettingsIcon, AddIcon, WarningIcon } from '@chakra-ui/icons';
+import { useColorMode } from '@chakra-ui/react';
 
 interface HeaderProps {
   onConfigClick: () => void;
   onAddSiteClick: () => void;
   onAddTipoClick: () => void;
   onRefresh: () => void;
+  onVerSitesOffline: () => void;
   loading: boolean;
   lastUpdate: string;
   error: string;
 }
 
-export default function Header({ 
-  onConfigClick, 
-  onAddSiteClick, 
-  onAddTipoClick, 
-  onRefresh, 
-  loading, 
-  lastUpdate, 
-  error 
+export default function Header({
+  onConfigClick,
+  onAddSiteClick,
+  onAddTipoClick,
+  onRefresh,
+  onVerSitesOffline,
+  loading,
+  lastUpdate,
+  error
 }: HeaderProps) {
   const { isOpen, onToggle } = useDisclosure();
-  
-  const bgColor = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const { colorMode, toggleColorMode } = useColorMode();
+
+  const bgColor = useColorModeValue('blue.600', 'blue.900');
+  const borderColor = useColorModeValue('blue.500', 'blue.800');
   const textColor = useColorModeValue('gray.600', 'gray.400');
+  const badgeBg = useColorModeValue('green.700', 'green.100');
+  const badgeColor = useColorModeValue('green.100', 'green.700');
 
   const tocarAlerta = () => {
     const audio = new Audio('/alerta.mp3');
@@ -52,7 +59,7 @@ export default function Header({
 
   return (
     <Box
-      bg={'blue.700'}
+      bg={bgColor}
       borderBottom="1px"
       borderColor={borderColor}
       boxShadow="sm"
@@ -66,47 +73,79 @@ export default function Header({
           </Flex>
 
           <HStack spacing={2} display={{ base: 'none', md: 'flex' }}>
-            <VStack align="start" spacing={1}>
-              <Text fontSize="sm" color={'white'}>
-                Últ. att: {lastUpdate || 'Nunca'}
-              </Text>
-              {error && (
+            <HStack spacing={1} bg={badgeBg} color={badgeColor} p={1} pl={2} borderRadius="md" boxShadow="sm">
+              {error ? (
                 <Text fontSize="xs" color="red.500">
                   Erro: {error}
                 </Text>
-              )}
-            </VStack>
-            
+              ) : (<Text fontSize="sm" fontWeight="medium">
+                {lastUpdate || 'Aguardando...'}
+              </Text>)}
+
+              <Tooltip label="Verificar agora">
+                <IconButton
+                  aria-label="Verificar"
+                  icon={<RepeatIcon />}
+                  colorScheme="green"
+                  variant="solid"
+                  onClick={onRefresh}
+                  isLoading={loading}
+                  size="xs"
+                  ml={1}
+                />
+              </Tooltip>
+            </HStack>
+            <Tooltip label="Alternar tema escuro/claro">
+              <IconButton
+                aria-label="Alternar tema"
+                icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
+                onClick={toggleColorMode}
+                colorScheme="cyan"
+                size="sm"
+              />
+            </Tooltip>
             <Tooltip label="Testar Alerta Sonoro">
               <IconButton
                 aria-label="Testar Alerta"
-                icon={<ViewIcon />}
+                icon={<BellIcon />}
                 colorScheme="yellow"
                 onClick={tocarAlerta}
                 size="sm"
               />
             </Tooltip>
-            <Tooltip label="Verificar agora">
+            <Tooltip label="Ver Sites Offline">
               <IconButton
-                aria-label="Verificar"
-                icon={<RepeatIcon />}
-                colorScheme="green"
-                onClick={onRefresh}
-                isLoading={loading}
+                aria-label="Ver Sites Offline"
+                icon={<WarningIcon />}
+                colorScheme="red"
+                onClick={onVerSitesOffline}
                 size="sm"
               />
             </Tooltip>
-            
-            
-            <Button onClick={onConfigClick} size="sm">
-              Configurar
-            </Button>
-            <Button onClick={onAddSiteClick} colorScheme="blue" size="sm">
-              Adicionar Site
-            </Button>
-            <Button onClick={onAddTipoClick} colorScheme="purple" size="sm">
-              Adicionar Tipo
-            </Button>
+            <Tooltip label="Configurações">
+              <IconButton
+                aria-label="Configurações"
+                icon={<SettingsIcon />}
+                colorScheme="purple"
+                onClick={onConfigClick}
+                size="sm"
+              />
+            </Tooltip>
+
+
+            <ButtonGroup isAttached variant="outline" size="sm">
+              <Tooltip label="Adicionar Site" placement='left'>
+                <Button onClick={onAddSiteClick} colorScheme="cyan" size="sm" variant="solid" leftIcon={<AddIcon />}>
+                  Site
+                </Button>
+              </Tooltip>
+              <Tooltip label="Adicionar Tipo" placement='left' >
+                <Button onClick={onAddTipoClick} colorScheme="teal" size="sm" variant="solid" leftIcon={<AddIcon />}>
+                  Tipo
+                </Button>
+              </Tooltip>
+            </ButtonGroup>
+
           </HStack>
 
           <IconButton
@@ -115,59 +154,88 @@ export default function Header({
             size="sm"
             icon={isOpen ? <CloseIcon /> : <HamburgerIcon />}
             variant="outline"
-            colorScheme="whiteAlpha"
+            colorScheme="white"
             aria-label="Abrir Menu"
           />
         </Flex>
 
         <Box display={{ base: isOpen ? 'block' : 'none', md: 'none' }} pb={4}>
           <VStack spacing={2} align="stretch">
-            <VStack align="start" spacing={1}>
-              <Text fontSize="sm" color={'white'}>
-                Última atualização: {lastUpdate || 'Nunca'}
-              </Text>
-              {error && (
-                <Alert status="error" size="sm" borderRadius="md">
-                  <AlertIcon />
-                  {error}
-                </Alert>
-              )}
-            </VStack>
-            
+            <HStack spacing={1} bg={badgeBg} color={badgeColor} p={1} pl={2} borderRadius="md" boxShadow="sm">
+              {error ? (
+                <Text fontSize="xs" color="red.500">
+                  Erro: {error}
+                </Text>
+              ) : (<Text fontSize="sm" fontWeight="medium">
+                {lastUpdate || 'Aguardando...'}
+              </Text>)}
+
+              <Tooltip label="Verificar agora">
+                <IconButton
+                  aria-label="Verificar"
+                  icon={<RepeatIcon />}
+                  colorScheme="green"
+                  variant="solid"
+                  onClick={onRefresh}
+                  isLoading={loading}
+                  size="xs"
+                  ml={1}
+                />
+              </Tooltip>
+            </HStack>
+
             <HStack spacing={2}>
+              <Tooltip label="Alternar tema escuro/claro">
+                <IconButton
+                  aria-label="Alternar tema"
+                  icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
+                  onClick={toggleColorMode}
+                  colorScheme="cyan"
+                  size="sm"
+                />
+              </Tooltip>
               <Tooltip label="Testar Alerta Sonoro">
                 <IconButton
                   aria-label="Testar Alerta"
-                  icon={<ViewIcon />}
+                  icon={<BellIcon />}
                   colorScheme="yellow"
                   onClick={tocarAlerta}
                   size="sm"
                 />
               </Tooltip>
-              
-              <Button
-                onClick={onRefresh}
-                isLoading={loading}
-                loadingText="Verificando..."
-                colorScheme="green"
-                leftIcon={<RepeatIcon />}
-                size="sm"
-                flex={1}
-              >
-                Verificar Agora
-              </Button>
-            </HStack>
-            
-            <HStack spacing={2}>
-              <Button onClick={onConfigClick} size="sm" width="full" justifyContent="center">
-                Configurar
-              </Button>
-              <Button onClick={onAddSiteClick} colorScheme="blue" size="sm" width="full" justifyContent="center">
-                Adicionar Site
-              </Button>
-              <Button onClick={onAddTipoClick} colorScheme="purple" size="sm" width="full" justifyContent="center">
-                Adicionar Tipo
-              </Button>
+              <Tooltip label="Ver Sites Offline">
+                <IconButton
+                  aria-label="Ver Sites Offline"
+                  icon={<WarningIcon />}
+                  colorScheme="red"
+                  onClick={onVerSitesOffline}
+                  size="sm"
+                />
+              </Tooltip>
+              <Tooltip label="Configurações">
+                <IconButton
+                  aria-label="Configurações"
+                  icon={<SettingsIcon />}
+                  colorScheme="purple"
+                  onClick={onConfigClick}
+                  size="sm"
+                />
+              </Tooltip>
+
+
+
+              <ButtonGroup isAttached variant="outline" size="sm">
+                <Tooltip label="Adicionar Site" placement='left'>
+                  <Button onClick={onAddSiteClick} colorScheme="cyan" size="sm" variant="solid" leftIcon={<AddIcon />}>
+                    Site
+                  </Button>
+                </Tooltip>
+                <Tooltip label="Adicionar Tipo" placement='left' >
+                  <Button onClick={onAddTipoClick} colorScheme="teal" size="sm" variant="solid" leftIcon={<AddIcon />}>
+                    Tipo
+                  </Button>
+                </Tooltip>
+              </ButtonGroup>
             </HStack>
           </VStack>
         </Box>
