@@ -1,48 +1,12 @@
 import { SiteOfflineHistory } from './verificarSite';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join } from 'path';
-import NodeCache from 'node-cache';
-
-const cache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
+import HistoryManager from './historyManager';
 
 const HISTORY_CACHE_KEY = 'offline_history';
+const HISTORY_FILE = 'offline_history.json';
 
-const HISTORY_FILE = join(process.cwd(), 'data', 'offline_history.json');
-
-export class OfflineHistoryManager {
-  private history: SiteOfflineHistory[] = [];
-
+export class OfflineHistoryManager extends HistoryManager<SiteOfflineHistory> {
   constructor() {
-    this.loadHistory();
-  }
-
-  private loadHistory() {
-    // Primeiro tenta pegar do cache
-    const cached = cache.get(HISTORY_CACHE_KEY);
-    if (cached !== undefined) {
-      this.history = cached as SiteOfflineHistory[];
-      return;
-    }
-    try {
-      if (existsSync(HISTORY_FILE)) {
-        const data = readFileSync(HISTORY_FILE, 'utf-8');
-        this.history = JSON.parse(data);
-        cache.set(HISTORY_CACHE_KEY, this.history);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar histórico:', error);
-      this.history = [];
-      cache.set(HISTORY_CACHE_KEY, []);
-    }
-  }
-
-  private saveHistory() {
-    cache.set(HISTORY_CACHE_KEY, this.history);
-    try {
-      writeFileSync(HISTORY_FILE, JSON.stringify(this.history, null, 2), 'utf-8');
-    } catch (error) {
-      console.error('Erro ao salvar histórico:', error);
-    }
+    super(HISTORY_CACHE_KEY, HISTORY_FILE);
   }
 
   public siteWentOffline(siteId: string, siteName: string, url: string, statusCode?: number, error?: string): void {

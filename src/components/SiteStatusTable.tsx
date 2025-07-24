@@ -107,19 +107,31 @@ export default function SiteStatusTable({
 
   const obterStatusIcon = (status: string) => {
     switch (status) {
-      case 'online': return '🟢';
-      case 'offline': return '🔴';
-      case 'rate_limited': return '⚠️';
-      default: return '❓';
+      case 'online':
+        return '🟢';
+      case 'offline':
+        return '🔴';
+      case 'rate_limited':
+        return '⚠️';
+      case 'slow':
+        return '🐢';
+      default:
+        return '❓';
     }
   };
 
   const obterStatusColor = (status: string) => {
     switch (status) {
-      case 'online': return 'green';
-      case 'offline': return 'red';
-      case 'rate_limited': return 'yellow';
-      default: return 'gray';
+      case 'online':
+        return 'green';
+      case 'offline':
+        return 'red';
+      case 'rate_limited':
+        return 'yellow';
+      case 'slow':
+        return 'orange';
+      default:
+        return 'gray';
     }
   };
 
@@ -265,8 +277,13 @@ export default function SiteStatusTable({
                         colorScheme={obterStatusColor(site.status)}
                         variant="subtle"
                       >
-                        {site.status === 'online' ? '✅ Online' :
-                          site.status === 'offline' ? '❌ Offline' : '⚠️ Rate Limited'}
+                        {site.status === 'online'
+                          ? '✅ Online'
+                          : site.status === 'offline'
+                          ? '❌ Offline'
+                          : site.status === 'slow'
+                          ? '🐢 Lento'
+                          : '⚠️ Rate Limited'}
                       </Badge>
                     </HStack>
                     {site.statusCode > 0 && (
