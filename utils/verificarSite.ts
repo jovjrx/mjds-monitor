@@ -55,7 +55,7 @@ export async function verificarSite(site: Site): Promise<SiteStatus> {
 
   try {
     const response: AxiosResponse = await axios.get(site.url, {
-      timeout: 10000,
+      timeout: 20000,
       maxRedirects: 5,
       validateStatus: () => true, // Aceita qualquer status code
       headers: {
