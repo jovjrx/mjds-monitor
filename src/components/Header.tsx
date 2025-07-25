@@ -48,7 +48,7 @@ export default function Header({
   const bgColor = useColorModeValue('blue.600', 'blue.900');
   const borderColor = useColorModeValue('blue.500', 'blue.800');
   const textColor = useColorModeValue('gray.600', 'gray.400');
-  const badgeBg = useColorModeValue('green.700', 'green.100');
+  const badgeBg = useColorModeValue('green.700', 'green.50');
   const badgeColor = useColorModeValue('green.100', 'green.700');
 
   const tocarAlerta = () => {
@@ -161,7 +161,7 @@ export default function Header({
 
         <Box display={{ base: isOpen ? 'block' : 'none', md: 'none' }} pb={4}>
           <VStack spacing={2} align="stretch">
-            <HStack spacing={1} bg={badgeBg} color={badgeColor} p={1} pl={2} borderRadius="md" boxShadow="sm">
+            <HStack spacing={1} bg={badgeBg} color={badgeColor} p={1} pl={2} justifyContent="space-between" borderRadius="md" boxShadow="sm">
               {error ? (
                 <Text fontSize="xs" color="red.500">
                   Erro: {error}
@@ -184,46 +184,47 @@ export default function Header({
               </Tooltip>
             </HStack>
 
-            <HStack spacing={2}>
-              <Tooltip label="Alternar tema escuro/claro">
-                <IconButton
-                  aria-label="Alternar tema"
-                  icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
-                  onClick={toggleColorMode}
-                  colorScheme="cyan"
-                  size="sm"
-                />
-              </Tooltip>
-              <Tooltip label="Testar Alerta Sonoro">
-                <IconButton
-                  aria-label="Testar Alerta"
-                  icon={<BellIcon />}
-                  colorScheme="yellow"
-                  onClick={tocarAlerta}
-                  size="sm"
-                />
-              </Tooltip>
-              <Tooltip label="Ver Sites Offline">
-                <IconButton
-                  aria-label="Ver Sites Offline"
-                  icon={<WarningIcon />}
-                  colorScheme="red"
-                  onClick={onVerSitesOffline}
-                  size="sm"
-                />
-              </Tooltip>
-              <Tooltip label="Configurações">
-                <IconButton
-                  aria-label="Configurações"
-                  icon={<SettingsIcon />}
-                  colorScheme="purple"
-                  onClick={onConfigClick}
-                  size="sm"
-                />
-              </Tooltip>
+            <HStack spacing={2} justifyContent="space-between">
+              <HStack spacing={2}>
 
 
-
+                <Tooltip label="Alternar tema escuro/claro">
+                  <IconButton
+                    aria-label="Alternar tema"
+                    icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
+                    onClick={toggleColorMode}
+                    colorScheme="cyan"
+                    size="sm"
+                  />
+                </Tooltip>
+                <Tooltip label="Testar Alerta Sonoro">
+                  <IconButton
+                    aria-label="Testar Alerta"
+                    icon={<BellIcon />}
+                    colorScheme="yellow"
+                    onClick={tocarAlerta}
+                    size="sm"
+                  />
+                </Tooltip>
+                <Tooltip label="Ver Sites Offline">
+                  <IconButton
+                    aria-label="Ver Sites Offline"
+                    icon={<WarningIcon />}
+                    colorScheme="red"
+                    onClick={onVerSitesOffline}
+                    size="sm"
+                  />
+                </Tooltip>
+                <Tooltip label="Configurações">
+                  <IconButton
+                    aria-label="Configurações"
+                    icon={<SettingsIcon />}
+                    colorScheme="purple"
+                    onClick={onConfigClick}
+                    size="sm"
+                  />
+                </Tooltip>
+              </HStack>
               <ButtonGroup isAttached variant="outline" size="sm">
                 <Tooltip label="Adicionar Site" placement='left'>
                   <Button onClick={onAddSiteClick} colorScheme="cyan" size="sm" variant="solid" leftIcon={<AddIcon />}>
