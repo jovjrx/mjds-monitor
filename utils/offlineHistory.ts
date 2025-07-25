@@ -12,7 +12,6 @@ export class OfflineHistoryManager extends HistoryManager<SiteOfflineHistory> {
   public siteWentOffline(siteId: string, siteName: string, url: string, statusCode?: number, error?: string): void {
     const now = new Date().toISOString();
     
-    // Verificar se já existe um registro aberto para este site
     const existingRecord = this.history.find(record => 
       record.siteId === siteId && !record.wentOnlineAt
     );
@@ -36,15 +35,13 @@ export class OfflineHistoryManager extends HistoryManager<SiteOfflineHistory> {
   public siteWentOnline(siteId: string): void {
     const now = new Date().toISOString();
     
-    // Encontrar o registro aberto para este site
     const record = this.history.find(record => 
       record.siteId === siteId && !record.wentOnlineAt
     );
 
     if (record) {
       record.wentOnlineAt = now;
-      
-      // Calcular duração em segundos
+        
       const offlineTime = new Date(record.wentOfflineAt).getTime();
       const onlineTime = new Date(now).getTime();
       record.duration = Math.floor((onlineTime - offlineTime) / 1000);

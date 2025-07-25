@@ -7,15 +7,12 @@ export default function DebugInfo() {
 
   const carregarDadosDebug = async () => {
     try {
-      // Carregar sites
       const sitesResponse = await fetch('/api/sites');
       const sitesData = await sitesResponse.json();
       
-      // Carregar tipos
       const tiposResponse = await fetch('/api/tipos');
       const tiposData = await tiposResponse.json();
-      
-      // Carregar monitoramento
+        
       const monitoramentoResponse = await fetch('/api/monitoramento');
       const monitoramentoData = await monitoramentoResponse.json();
       

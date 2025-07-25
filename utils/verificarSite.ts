@@ -30,7 +30,7 @@ export interface SiteOfflineHistory {
   url: string;
   wentOfflineAt: string;
   wentOnlineAt?: string;
-  duration?: number; // em segundos
+  duration?: number;
   statusCode?: number;
   error?: string;
 }
@@ -49,15 +49,15 @@ export interface Tipo {
   descricao: string;
 }
 
-export async function verificarSite(site: Site): Promise<SiteStatus> {
+export async function verificarSite(site: Site, slowTimeout = 10000, offlineTimeout = 20000): Promise<SiteStatus> {
   const startTime = Date.now();
   const lastChecked = new Date().toISOString();
 
   try {
     const response: AxiosResponse = await axios.get(site.url, {
-      timeout: 20000,
+      timeout: offlineTimeout,
       maxRedirects: 5,
-      validateStatus: () => true, // Aceita qualquer status code
+      validateStatus: () => true,
       headers: {
         'User-Agent': DEFAULT_USER_AGENT,
       },
@@ -66,7 +66,6 @@ export async function verificarSite(site: Site): Promise<SiteStatus> {
     const responseTime = Date.now() - startTime;
     const { status: statusCode, headers, data: html } = response;
 
-    // Determinar status baseado no código de resposta
     let status: 'online' | 'offline' | 'rate_limited' | 'slow' = 'online';
     if (statusCode >= 400) {
       if (statusCode === 429) {
@@ -76,11 +75,10 @@ export async function verificarSite(site: Site): Promise<SiteStatus> {
       }
     }
 
-    if (status === 'online' && responseTime >= 10000) {
+    if (status === 'online' && responseTime >= slowTimeout) {
       status = 'slow';
     }
 
-    // Extrair informações dos headers
     const cacheControl = headers['cache-control'] || headers['Cache-Control'];
     const lastModified = headers['last-modified'] || headers['Last-Modified'] || headers['date'] || headers['Date'];
     const age = headers['age'] || headers['Age'];
@@ -89,16 +87,13 @@ export async function verificarSite(site: Site): Promise<SiteStatus> {
     const xAzureRef = headers['x-azure-ref'] || headers['X-Azure-Ref'];
     const xMsRef = headers['x-ms-ref'] || headers['X-Ms-Ref'];
 
-    // Verificar se é Azure Front Door
     const isAzureFrontDoor = !!(xAzureRef || xMsRef || 
       (headers['server'] && headers['server'].includes('Azure')) ||
       (headers['via'] && headers['via'].includes('azure')));
 
-    // Verificar se está usando cache
     const isUsingCache = !!(age || xCache || cfCacheStatus || 
       (cacheControl && cacheControl.includes('max-age')));
 
-    // Calcular tempo de cache
     let cacheAge: number | undefined;
     let cacheMaxAge: number | undefined;
 
@@ -113,7 +108,6 @@ export async function verificarSite(site: Site): Promise<SiteStatus> {
       }
     }
 
-    // Verificar CDN no HTML
     const cdnInfo = extrairVersaoCDN(html);
 
     return {
@@ -156,7 +150,6 @@ export async function verificarSite(site: Site): Promise<SiteStatus> {
 function extrairVersaoCDN(html: string): { version?: string; link?: string } {
   if (!html || typeof html !== 'string') return {};
 
-  // Padrões para detectar CDN MJDS com versão
   const cdnPatterns = [
     /(?:cdn|ca|cs)\.mjds\.com\.br\/([^"'\s?]+)/gi,
     /(?:cdn|ca|cs)\.mjds\.com\.br\?v=([^"'\s&]+)/gi,
@@ -164,11 +157,9 @@ function extrairVersaoCDN(html: string): { version?: string; link?: string } {
     /(?:cdn|ca|cs)\.mjds\.com\.br\/([^"'\s?]+)\?/gi,
   ];
 
-  // Primeiro, procurar por versões específicas (v*)
   for (const pattern of cdnPatterns) {
     const match = html.match(pattern);
     if (match && match[1]) {
-      // Verificar se a versão contém um padrão v* (como v202505)
       if (match[1].includes('v') && /\bv\d+\b/.test(match[1])) {
         const versionMatch = match[1].match(/\bv\d+\b/);
         if (versionMatch) {
@@ -181,12 +172,10 @@ function extrairVersaoCDN(html: string): { version?: string; link?: string } {
     }
   }
 
-  // Se não encontrou versão específica, procurar por qualquer referência à CDN
   const cdnDomains = ['cdn.mjds.com.br', 'ca.mjds.com.br', 'cs.mjds.com.br'];
   
   for (const domain of cdnDomains) {
-    if (html.includes(domain)) {
-      // Encontrar a URL completa da CDN
+    if (html.includes(domain)) {  
       const urlPattern = new RegExp(`https?://${domain.replace(/\./g, '\\.')}[^"'\s]+`, 'gi');
       const urlMatch = html.match(urlPattern);
       
@@ -200,10 +189,10 @@ function extrairVersaoCDN(html: string): { version?: string; link?: string } {
   return {};
 }
 
-export async function verificarTodosSites(sites: Site[]): Promise<SiteStatus[]> {
+export async function verificarTodosSites(sites: Site[], slowTimeout = 10000, offlineTimeout = 20000): Promise<SiteStatus[]> {
   const promises = sites
     .filter(site => site.ativo)
-    .map(site => verificarSite(site));
+    .map(site => verificarSite(site, slowTimeout, offlineTimeout));
 
   return Promise.all(promises);
 } 

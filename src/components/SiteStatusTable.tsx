@@ -36,8 +36,9 @@ interface SiteStatusTableProps {
   onMonitoramentoUpdate: (monitoramento: Record<string, SiteStatus>) => void;
   loading: boolean;
   lastUpdate: string;
-  sitesOffline: SiteStatus[];
   error: string;
+  slowTimeout: number;
+  offlineTimeout: number;
 }
 
 interface OfflineStats {
@@ -66,10 +67,11 @@ export default function SiteStatusTable({
   onEditSite,
   onRefresh,
   onMonitoramentoUpdate,
-  sitesOffline,
   loading,
   lastUpdate,
-  error
+  error,
+  slowTimeout,
+  offlineTimeout
 }: SiteStatusTableProps) {
   const [monitoramento, setMonitoramento] = useState<Record<string, SiteStatus>>({});
   const [tipos, setTipos] = useState<Tipo[]>([]);
@@ -160,7 +162,7 @@ export default function SiteStatusTable({
 
   const verificarSites = async () => {
     try {
-      const response = await fetch('/api/verificar');
+      const response = await fetch(`/api/verificar?slowTimeout=${slowTimeout}&offlineTimeout=${offlineTimeout}`);
       const data = await response.json();
 
       if (data.success) {
@@ -233,6 +235,11 @@ export default function SiteStatusTable({
   }, [intervalSeconds]);
 
   const sites = Object.values(monitoramento);
+  const sitesOffline = sites.filter(site => site.status === 'offline' || site.status === 'rate_limited')
+    .map(site => ({
+      ...site,
+      visto: getOfflineSeen().includes(site.id)
+    }));
 
   const sitesPorTipo = tipos.map(tipo => ({
     tipo,

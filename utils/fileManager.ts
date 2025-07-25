@@ -5,18 +5,14 @@ import NodeCache from 'node-cache';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 
-// Detectar se estamos rodando na Vercel
 const isVercel = !!process.env.VERCEL;
 
-// Dados em memória (usados quando escrita em disco não é possível)
 let sitesInMemory: Site[] = [];
 let tiposInMemory: Tipo[] = [];
 let monitoramentoInMemory: Record<string, SiteStatus> = {};
 
-// Instância do cache
 const cache = new NodeCache({ stdTTL: 0, checkperiod: 0 });
 
-// Carregar dados dos arquivos para uso inicial e popular o cache
 try {
   const rawSites = fs.readFileSync(path.join(DATA_DIR, 'sites.json'), 'utf-8');
   sitesInMemory = JSON.parse(rawSites);
@@ -47,7 +43,6 @@ try {
   cache.set('monitoramento', {});
 }
 
-// Garantir que o diretório data existe
 async function ensureDataDir() {
   if (isVercel) return;
   
@@ -59,7 +54,6 @@ async function ensureDataDir() {
 }
 
 export async function lerArquivo<T>(nomeArquivo: string): Promise<T> {
-  // Primeiro tenta pegar do cache
   const cacheKey = nomeArquivo.replace('.json', '');
   const cached = cache.get(cacheKey);
   if (cached !== undefined) {
@@ -69,11 +63,9 @@ export async function lerArquivo<T>(nomeArquivo: string): Promise<T> {
     await ensureDataDir();
     const caminho = path.join(DATA_DIR, nomeArquivo);
     
-    // Verificar se o arquivo existe
     try {
       await fsPromises.access(caminho);
     } catch {
-      // Se não existe, retornar array vazio ou objeto vazio
       if (nomeArquivo === 'monitoramento.json') {
         return {} as T;
       }
@@ -86,7 +78,6 @@ export async function lerArquivo<T>(nomeArquivo: string): Promise<T> {
     return parsed;
   } catch (error) {
     console.error(`Erro ao ler arquivo ${nomeArquivo}:`, error);
-    // Falha ao ler do disco, retornar dados em memória
     switch (nomeArquivo) {
       case 'sites.json':
         return sitesInMemory as T;
@@ -104,7 +95,6 @@ export async function lerArquivo<T>(nomeArquivo: string): Promise<T> {
 }
 
 export async function escreverArquivo<T>(nomeArquivo: string, dados: T): Promise<void> {
-  // Atualiza o cache primeiro
   const cacheKey = nomeArquivo.replace('.json', '');
   cache.set(cacheKey, dados);
   try {
@@ -113,7 +103,6 @@ export async function escreverArquivo<T>(nomeArquivo: string, dados: T): Promise
     await fsPromises.writeFile(caminho, JSON.stringify(dados, null, 2), 'utf-8');
   } catch (error) {
     console.error(`Erro ao escrever arquivo ${nomeArquivo}:`, error);
-    // Se não for possível escrever, atualizar dados em memória
     switch (nomeArquivo) {
       case 'sites.json':
         sitesInMemory = dados as Site[];

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Box, Container, VStack, useColorModeValue, Alert, AlertIcon, Text, Button } from '@chakra-ui/react';
+import { Box, Container, VStack, useColorModeValue, Alert, AlertIcon, Text, Button, useDisclosure } from '@chakra-ui/react';
 import Header from '../components/Header';
 import SiteStatusTable from '../components/SiteStatusTable';
 import Modal from '../components/Modal';
@@ -11,7 +11,6 @@ import TipoForm from '../components/TipoForm';
 import OfflineSitesModal from '@/components/OfflineSitesModal';
 import { SiteStatus } from '../../utils/verificarSite';
 
-// Funções utilitárias para localStorage (persiste entre refreshes)
 function getOfflineSeen(): string[] {
   if (typeof window === 'undefined') return [];
   try {
@@ -25,7 +24,6 @@ function setOfflineSeen(ids: string[]) {
   localStorage.setItem('offline_seen', JSON.stringify(ids));
 }
 
-// Função para limpar quando sair da janela
 function clearOfflineSeenOnUnload() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('offline_seen');
@@ -38,58 +36,82 @@ export default function Home() {
   const [showEditSite, setShowEditSite] = useState(false);
   const [editingSiteId, setEditingSiteId] = useState<string>('');
   const [refreshKey, setRefreshKey] = useState(0);
-  const [intervalSeconds, setIntervalSeconds] = useState(60);
+  const [intervalSeconds, setIntervalSeconds] = useState(180);
   const [loading, setLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<string>('');
   const [error, setError] = useState<string>('');
-  
+
   // Estados para sites offline
   const [monitoramento, setMonitoramento] = useState<Record<string, SiteStatus>>({});
-  const [showOfflineSites, setShowOfflineSites] = useState(false);
+  const showProblems = useDisclosure();
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const prevOfflineIdsRef = useRef<string[]>([]);
 
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const textColor = useColorModeValue('gray.600', 'gray.400');
 
-  // Adicionar event listener para limpar quando sair da janela
+  const [slowTimeout, setSlowTimeout] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const v = localStorage.getItem('slowTimeout');
+      return v ? parseInt(v) : 10000;
+    }
+    return 10000;
+  });
+  const [offlineTimeout, setOfflineTimeout] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const v = localStorage.getItem('offlineTimeout');
+      return v ? parseInt(v) : 20000;
+    }
+    return 20000;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('slowTimeout', String(slowTimeout));
+  }, [slowTimeout]);
+  useEffect(() => {
+    localStorage.setItem('offlineTimeout', String(offlineTimeout));
+  }, [offlineTimeout]);
+
   useEffect(() => {
     const handleBeforeUnload = () => {
       clearOfflineSeenOnUnload();
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
+
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, []);
 
-  // Função para marcar como visto
   const marcarComoVisto = (siteId: string) => {
     const currentSeen = getOfflineSeen();
     if (!currentSeen.includes(siteId)) {
       const newSeen = [...currentSeen, siteId];
       setOfflineSeen(newSeen);
-      // Forçar re-render
       setMonitoramento({ ...monitoramento });
     }
   };
 
-  // Sites offline com propriedade visto
-  const sitesOffline = Object.values(monitoramento)
-    .filter(site =>
-      site.status === 'offline' ||
-      site.status === 'rate_limited' ||
-      site.status === 'slow'
-    )
+  const sitesOffline = Object.values(monitoramento || {})
+    .filter(site => site && (site.status === 'offline' || site.status === 'rate_limited'))
     .map(site => ({
       ...site,
       visto: getOfflineSeen().includes(site.id)
     }));
 
-  // Sites offline não vistos
+  useEffect(() => {
+    const currentIds = sitesOffline.map(site => site.id);
+    const novosOffline = currentIds.filter(id => !prevOfflineIdsRef.current.includes(id));
+    if (novosOffline.length > 0 && audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {});
+    }
+    prevOfflineIdsRef.current = currentIds;
+  }, [sitesOffline]);
+
   const sitesOfflineNaoVistos = sitesOffline.filter(site => !site.visto);
 
-  // Variáveis de cor para o alerta
   const alertText = useColorModeValue('red.800', 'red.200');
   const alertSubText = useColorModeValue('red.600', 'red.300');
 
@@ -133,19 +155,21 @@ export default function Home() {
     }
   };
 
-  // Função para atualizar monitoramento (chamada pelo SiteStatusTable)
   const handleMonitoramentoUpdate = (newMonitoramento: Record<string, SiteStatus>) => {
     setMonitoramento(newMonitoramento);
   };
 
   return (
     <Box minH="100vh" bg={bgColor} display="flex" flexDirection="column">
+      <audio ref={audioRef} preload="auto">
+        <source src="/alerta.mp3" type="audio/mpeg" />
+      </audio>
       <Header
         onConfigClick={() => setShowConfig(true)}
         onAddSiteClick={() => setShowSiteForm(true)}
         onAddTipoClick={() => setShowTipoForm(true)}
         onRefresh={handleRefresh}
-        onVerSitesOffline={() => setShowOfflineSites(true)}
+        onVerSitesOffline={showProblems.onOpen}
         loading={loading}
         lastUpdate={lastUpdate}
         error={error}
@@ -162,7 +186,7 @@ export default function Home() {
             <AlertIcon />
             <Box flex="1">
               <Text fontWeight="medium" color={alertText}>
-                {sitesOfflineNaoVistos.length} site(s) com problema detectado(s)
+                {sitesOfflineNaoVistos.length} site(s) offline detectado(s)
               </Text>
               <Text fontSize="sm" color={alertSubText}>
                 Clique em "Ver Sites Offline" para mais detalhes
@@ -172,23 +196,24 @@ export default function Home() {
               size="sm"
               colorScheme="red"
               variant="solid"
-              onClick={() => setShowOfflineSites(true)}
+              onClick={showProblems.onOpen}
             >
               Ver Sites Offline
             </Button>
           </Alert>
         )}
-        
+
         <Box key={refreshKey} h="full">
           <SiteStatusTable
             intervalSeconds={intervalSeconds}
             onEditSite={handleEditSite}
             onRefresh={handleRefresh}
-            sitesOffline={sitesOfflineNaoVistos}
             onMonitoramentoUpdate={handleMonitoramentoUpdate}
             loading={loading}
             lastUpdate={lastUpdate}
             error={error}
+            slowTimeout={slowTimeout}
+            offlineTimeout={offlineTimeout}
           />
         </Box>
       </Container>
@@ -201,6 +226,10 @@ export default function Home() {
         <Configuracao
           intervalSeconds={intervalSeconds}
           onIntervalChange={handleIntervalChange}
+          slowTimeout={slowTimeout}
+          offlineTimeout={offlineTimeout}
+          onSlowTimeoutChange={setSlowTimeout}
+          onOfflineTimeoutChange={setOfflineTimeout}
           onClose={() => setShowConfig(false)}
         />
       </Modal>
@@ -232,11 +261,9 @@ export default function Home() {
         <TipoForm onClose={() => setShowTipoForm(false)} />
       </Modal>
 
-      {/* Modal de Sites Offline */}
       <OfflineSitesModal
-      
-        isOpen={showOfflineSites}
-        onClose={() => setShowOfflineSites(false)}
+        isOpen={showProblems.isOpen}
+        onClose={showProblems.onClose}
         sitesOffline={sitesOffline}
         onMarcarComoVisto={marcarComoVisto}
       />

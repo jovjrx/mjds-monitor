@@ -4,7 +4,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ChakraProvider, extendTheme } from '@chakra-ui/react';
 import { useState } from 'react';
 
-// Configurar tema com modo do sistema
 const theme = extendTheme({
   config: {
     initialColorMode: 'system',
@@ -18,7 +17,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 5 * 60 * 1000, // 5 minutos
+            staleTime: 5 * 60 * 1000,
             retry: 1,
             refetchOnWindowFocus: false,
             refetchOnMount: false,

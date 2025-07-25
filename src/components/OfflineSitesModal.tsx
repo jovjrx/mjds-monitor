@@ -17,6 +17,8 @@ import {
   Button,
   IconButton,
   Tooltip,
+  Alert,
+  AlertIcon,
 } from '@chakra-ui/react';
 import { ExternalLinkIcon, EditIcon } from '@chakra-ui/icons';
 import { SiteStatus } from '../../utils/verificarSite';
@@ -81,14 +83,14 @@ export default function OfflineSitesModal({
   // Remover estados e useEffects relacionados ao sessionStorage
 
   return (
-    <Modal isOpen={isOpen && sitesOffline.length > 0} onClose={onClose} size="xl" scrollBehavior="inside">
+    <Modal isOpen={isOpen} onClose={onClose} size="xl" scrollBehavior="inside">
       <ModalOverlay />
       <ModalContent bg={bgColor}>
         <ModalHeader borderBottom="1px" borderColor={borderColor}>
           <HStack spacing={3} justify="space-between">
             <HStack spacing={3}>
               <Text fontSize="lg" fontWeight="bold" color="red.500">
-                Sites Offline ou Lentos
+                Problemas
               </Text>
               <Badge colorScheme="red" rounded="lg" px={2} variant="solid" size={'md'} fontSize="xs">
                 {sitesOffline.length} site(s)
@@ -99,11 +101,10 @@ export default function OfflineSitesModal({
         <ModalCloseButton />
         <ModalBody py={6}>
           {sitesOffline.length === 0 ? (
-            <Box textAlign="center" py={8}>
-              <Text color={textColor} fontSize="lg">
-                Nenhum site offline no momento
-              </Text>
-            </Box>
+            <Alert status="success" borderRadius="lg" colorScheme="green" mb={2}>
+              <AlertIcon />
+              Nenhum problema detectado. Todos os sites estão online!
+            </Alert>
           ) : (
             <VStack spacing={4} align="stretch">
               {sitesOffline.map((site) => (

@@ -21,10 +21,8 @@ export async function GET(request: NextRequest) {
       history = historyManager.getOfflineHistory();
     }
     
-    // Limitar resultados
-    history = history.slice(0, limit);
+     history = history.slice(0, limit);
     
-    // Obter estatísticas
     const stats = historyManager.getOfflineStats();
     
     return NextResponse.json({

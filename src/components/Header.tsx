@@ -113,12 +113,12 @@ export default function Header({
                 size="sm"
               />
             </Tooltip>
-            <Tooltip label="Ver Sites Offline">
+            <Tooltip label="Ver Problemas">
               <IconButton
-                aria-label="Ver Sites Offline"
+                aria-label="Ver Problemas"
                 icon={<WarningIcon />}
                 colorScheme="red"
-                onClick={onVerSitesOffline}
+                onClick={() => onVerSitesOffline()}
                 size="sm"
               />
             </Tooltip>
