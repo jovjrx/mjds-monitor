@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { obterSites, salvarMonitoramento, obterMonitoramento } from '../../../../utils/fileManager';
-import { verificarTodosSites } from '../../../../utils/verificarSite';
-import { OfflineHistoryManager } from '../../../../utils/offlineHistory';
-import { SlowHistoryManager } from '../../../../utils/slowHistory';
+import { obterSites, salvarMonitoramento, obterMonitoramento } from '@/utils/fileManager';
+import { verificarTodosSites } from '@/utils/verificarSite';
+import { OfflineHistoryManager } from '@/utils/offlineHistory';
+import { SlowHistoryManager } from '@/utils/slowHistory';
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const monitoramentoAnterior = await obterMonitoramento();
     
     const resultados = await verificarTodosSites(sites, slowTimeout, offlineTimeout);
-      
+
     resultados.forEach(resultado => {
       const statusAnterior = monitoramentoAnterior[resultado.id]?.status;
 

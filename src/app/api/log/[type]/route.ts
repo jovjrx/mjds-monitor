@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { OfflineHistoryManager } from '../../../../../utils/offlineHistory';
-import { SlowHistoryManager } from '../../../../../utils/slowHistory';
+import { OfflineHistoryManager } from '@/utils/offlineHistory';
+import { SlowHistoryManager } from '@/utils/slowHistory';
 
 export async function GET(request: Request, context: any) {
   const { type } = context.params;

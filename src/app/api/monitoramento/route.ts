@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { obterMonitoramento } from '../../../../utils/fileManager';
+import { obterMonitoramento } from '@/utils/fileManager';
 
 export async function GET() {
   try {

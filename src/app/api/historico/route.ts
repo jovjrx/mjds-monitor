@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { OfflineHistoryManager } from '../../../../utils/offlineHistory';
+import { OfflineHistoryManager } from '@/utils/offlineHistory';
 
 export async function GET(request: NextRequest) {
   try {

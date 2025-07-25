@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SlowHistoryManager } from '../../../../utils/slowHistory';
+import { SlowHistoryManager } from '@/utils/slowHistory';
 
 export async function GET(request: NextRequest) {
   try {

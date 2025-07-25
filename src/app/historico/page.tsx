@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Box, Container, useColorModeValue } from '@chakra-ui/react';
-import Header from '../components/Header';
-import OfflineHistory from '../components/OfflineHistory';
+import Header from '@/components/Header';
+import OfflineHistory from '@/components/OfflineHistory';
 
 export default function HistoricoPage() {
   const [history, setHistory] = useState<any[]>([]);

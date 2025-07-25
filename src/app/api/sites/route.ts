@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { obterSites, salvarSites, gerarId, atualizarSite } from '../../../../utils/fileManager';
-import { Site } from '../../../../utils/verificarSite';
+import { obterSites, salvarSites, gerarId, atualizarSite } from '@/utils/fileManager';
+import { Site } from '@/utils/verificarSite';
 
 export async function GET() {
   try {

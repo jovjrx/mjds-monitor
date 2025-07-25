@@ -1,15 +1,15 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Box, Container, VStack, useColorModeValue, Alert, AlertIcon, Text, Button, useDisclosure } from '@chakra-ui/react';
-import Header from '../components/Header';
-import SiteStatusTable from '../components/SiteStatusTable';
-import Modal from '../components/Modal';
-import Configuracao from '../components/Configuracao';
-import SiteForm from '../components/SiteForm';
-import TipoForm from '../components/TipoForm';
+import { Box, Container, useColorModeValue, Alert, AlertIcon, Text, Button, useDisclosure } from '@chakra-ui/react';
+import Header from '@/components/Header';
+import SiteStatusTable from '@/components/SiteStatusTable';
+import Modal from '@/components/Modal';
+import Configuracao from '@/components/Configuracao';
+import SiteForm from '@/components/SiteForm';
+import TipoForm from '@/components/TipoForm';
 import OfflineSitesModal from '@/components/OfflineSitesModal';
-import { SiteStatus } from '../../utils/verificarSite';
+import { SiteStatus } from '@/utils/verificarSite';
 
 function getOfflineSeen(): string[] {
   if (typeof window === 'undefined') return [];
@@ -41,7 +41,6 @@ export default function Home() {
   const [lastUpdate, setLastUpdate] = useState<string>('');
   const [error, setError] = useState<string>('');
 
-  // Estados para sites offline
   const [monitoramento, setMonitoramento] = useState<Record<string, SiteStatus>>({});
   const showProblems = useDisclosure();
   const audioRef = useRef<HTMLAudioElement>(null);

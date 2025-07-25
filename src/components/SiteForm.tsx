@@ -14,7 +14,7 @@ import {
   useColorModeValue,
   Text,
 } from '@chakra-ui/react';
-import { Tipo } from '../../utils/verificarSite';
+import { Tipo } from '@/utils/verificarSite';
 
 interface SiteFormProps {
   onClose: () => void;

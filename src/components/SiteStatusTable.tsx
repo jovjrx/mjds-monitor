@@ -27,7 +27,7 @@ import {
   TabPanel,
 } from '@chakra-ui/react';
 import { ExternalLinkIcon, EditIcon } from '@chakra-ui/icons';
-import { SiteStatus, Tipo } from '../../utils/verificarSite';
+import { SiteStatus, Tipo } from '@/utils/verificarSite';
 
 interface SiteStatusTableProps {
   intervalSeconds: number;

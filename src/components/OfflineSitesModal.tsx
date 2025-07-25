@@ -20,8 +20,8 @@ import {
   Alert,
   AlertIcon,
 } from '@chakra-ui/react';
-import { ExternalLinkIcon, EditIcon } from '@chakra-ui/icons';
-import { SiteStatus } from '../../utils/verificarSite';
+import { ExternalLinkIcon } from '@chakra-ui/icons';
+import { SiteStatus } from '@/utils/verificarSite';
 
 interface OfflineSitesModalProps {
   isOpen: boolean;
@@ -29,8 +29,6 @@ interface OfflineSitesModalProps {
   sitesOffline: SiteStatus[];
   onMarcarComoVisto: (siteId: string) => void;
 }
-
-// Remover funções utilitárias de sessionStorage (agora gerenciado no componente pai)
 
 export default function OfflineSitesModal({
   isOpen,
@@ -80,8 +78,6 @@ export default function OfflineSitesModal({
     }
   };
 
-  // Remover estados e useEffects relacionados ao sessionStorage
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl" scrollBehavior="inside">
       <ModalOverlay />
@@ -116,7 +112,6 @@ export default function OfflineSitesModal({
                   borderRadius="lg"
                 >
                   <VStack align="start" spacing={3}>
-                    {/* Cabeçalho do site */}
                     <HStack justify="space-between" w="full">
                       <VStack align="start" spacing={1}>
                         <Text fontWeight="bold" fontSize="lg">
@@ -142,7 +137,6 @@ export default function OfflineSitesModal({
                       </HStack>
                     </HStack>
 
-                    {/* Detalhes do status */}
                     <HStack spacing={4} wrap="wrap">
                       {site.statusCode > 0 && (
                         <Badge colorScheme="gray" variant="outline">
@@ -156,7 +150,6 @@ export default function OfflineSitesModal({
                       )}
                     </HStack>
 
-                    {/* Informações adicionais */}
                     <HStack spacing={4} fontSize="sm" color={textColor}>
                       <Text>
                         <strong>Última verificação:</strong> {formatarData(site.lastChecked)}
@@ -167,8 +160,7 @@ export default function OfflineSitesModal({
                         </Text>
                       )}
                     </HStack>
-
-                    {/* Ações */}
+                      
                     <HStack spacing={2} pt={2} justify="space-between" w="full" align="center">
                       <Tooltip label="Abrir Site">
                         <IconButton

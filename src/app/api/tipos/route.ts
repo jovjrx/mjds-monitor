@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { obterTipos, salvarTipos, gerarId, atualizarTipo } from '../../../../utils/fileManager';
-import { Tipo } from '../../../../utils/verificarSite';
+import { obterTipos, salvarTipos, gerarId, atualizarTipo } from '@/utils/fileManager';
+import { Tipo } from '@/utils/verificarSite';
 
 export async function GET() {
   try {
