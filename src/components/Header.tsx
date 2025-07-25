@@ -48,8 +48,8 @@ export default function Header({
   const bgColor = useColorModeValue('blue.600', 'blue.900');
   const borderColor = useColorModeValue('blue.500', 'blue.800');
   const textColor = useColorModeValue('gray.600', 'gray.400');
-  const badgeBg = useColorModeValue('green.700', 'green.50');
-  const badgeColor = useColorModeValue('green.100', 'green.700');
+  const badgeBg = useColorModeValue('green.200', 'green.50');
+  const badgeColor = useColorModeValue('green.700', 'green.700');
 
   const tocarAlerta = () => {
     const audio = new Audio('/alerta.mp3');
