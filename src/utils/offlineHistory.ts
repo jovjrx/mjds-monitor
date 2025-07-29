@@ -1,10 +1,9 @@
-import { SiteOfflineHistory } from './verificarSite';
 import HistoryManager from './historyManager';
 
 const HISTORY_CACHE_KEY = 'offline_history';
 const HISTORY_FILE = 'offline_history.json';
 
-export class OfflineHistoryManager extends HistoryManager<SiteOfflineHistory> {
+export class OfflineHistoryManager extends HistoryManager<any> {
   constructor() {
     super(HISTORY_CACHE_KEY, HISTORY_FILE);
   }
@@ -17,7 +16,7 @@ export class OfflineHistoryManager extends HistoryManager<SiteOfflineHistory> {
     );
 
     if (!existingRecord) {
-      const newRecord: SiteOfflineHistory = {
+      const newRecord: any = {
         id: `${siteId}_${Date.now()}`,
         siteId,
         siteName,
@@ -50,18 +49,18 @@ export class OfflineHistoryManager extends HistoryManager<SiteOfflineHistory> {
     }
   }
 
-  public getOfflineHistory(siteId?: string): SiteOfflineHistory[] {
+  public getOfflineHistory(siteId?: string): any[] {
     if (siteId) {
       return this.history.filter(record => record.siteId === siteId);
     }
     return this.history;
   }
 
-  public getCurrentOfflineSites(): SiteOfflineHistory[] {
+  public getCurrentOfflineSites(): any[] {
     return this.history.filter(record => !record.wentOnlineAt);
   }
 
-  public getOfflineHistoryByDateRange(startDate: string, endDate: string): SiteOfflineHistory[] {
+  public getOfflineHistoryByDateRange(startDate: string, endDate: string): any[] {
     const start = new Date(startDate).getTime();
     const end = new Date(endDate).getTime();
     
