@@ -113,24 +113,11 @@ export default function Home() {
       visto: getOfflineSeen().includes(site.id)
     }));
 
-  console.log('📊 Sites offline detectados:', {
-    total: sitesOffline.length,
-    sites: sitesOffline.map(s => ({ id: s.id, nome: s.nome, visto: s.visto }))
-  });
-
   useEffect(() => {
     const currentIds = sitesOffline.map(site => site.id);
     const novosOffline = currentIds.filter(id => !prevOfflineIdsRef.current.includes(id));
     
-    console.log('🔍 Verificando alertas:', {
-      sitesOffline: sitesOffline.length,
-      novosOffline: novosOffline.length,
-      primeiraVerificacao,
-      audioRef: !!audioRef.current
-    });
-    
     if (novosOffline.length > 0 && audioRef.current && !primeiraVerificacao) {
-      console.log('🚨 ALERTA: Sites offline detectados:', novosOffline);
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch((error) => {
         console.error('❌ Erro ao tocar alerta sonoro:', error);
