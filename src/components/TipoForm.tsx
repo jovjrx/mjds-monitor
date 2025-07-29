@@ -66,9 +66,6 @@ export default function TipoForm({ onClose }: TipoFormProps) {
   return (
     <form onSubmit={handleSubmit}>
       <VStack spacing={4} align="stretch">
-        <Text fontSize="lg" fontWeight="medium" color={useColorModeValue('gray.700', 'gray.300')}>
-          Adicionar Novo Tipo
-        </Text>
 
         {error && (
           <Alert status="error" borderRadius="md">

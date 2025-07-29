@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { obterTipos, salvarTipos, gerarId, atualizarTipo } from '@/utils/fileManager';
-import { Tipo } from '@/utils/verificarSite';
+import { obterTipos, adicionarTipo, atualizarTipo, removerTipo } from '@/utils/cacheManager';
+import { Tipo } from '@/utils/supabase';
 
 export async function GET() {
   try {
@@ -28,15 +28,14 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const tipos = await obterTipos();
     const novoTipo: Tipo = {
-      id: gerarId(),
+      id: Date.now(),
       nome,
+      cor: body.cor || '#000000',
       descricao: descricao || ''
     };
     
-    tipos.push(novoTipo);
-    await salvarTipos(tipos);
+    await adicionarTipo(novoTipo);
       
     return NextResponse.json({ success: true, data: novoTipo });
   } catch (error: any) {
@@ -60,17 +59,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
     
-    const tipos = await obterTipos();
-    const tiposFiltrados = tipos.filter(tipo => tipo.id !== id);
-    
-    if (tiposFiltrados.length === tipos.length) {
-      return NextResponse.json(
-        { success: false, error: 'Tipo não encontrado' },
-        { status: 404 }
-      );
-    }
-    
-    await salvarTipos(tiposFiltrados);
+    await removerTipo(id);
     
     return NextResponse.json({ success: true });
   } catch (error: any) {

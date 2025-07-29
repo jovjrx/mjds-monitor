@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import {
   Box,
   Flex,
@@ -13,12 +12,11 @@ import {
   Container,
   VStack,
   Heading,
-  Tooltip,
-  Alert,
-  AlertIcon,
+  Tooltip,  
   ButtonGroup,
+  Spinner,
 } from '@chakra-ui/react';
-import { HamburgerIcon, CloseIcon, RepeatIcon, ViewIcon, SunIcon, MoonIcon, BellIcon, SettingsIcon, AddIcon, WarningIcon } from '@chakra-ui/icons';
+import { HamburgerIcon, CloseIcon, RepeatIcon, SunIcon, MoonIcon, BellIcon, SettingsIcon, AddIcon, WarningIcon } from '@chakra-ui/icons';
 import { useColorMode } from '@chakra-ui/react';
 
 interface HeaderProps {
@@ -30,6 +28,10 @@ interface HeaderProps {
   loading: boolean;
   lastUpdate: string;
   error: string;
+  progresso?: { atual: number; total: number; percentual: number } | null;
+  verificando?: boolean;
+  verificandoSite?: boolean;
+  currentSite?: string;
 }
 
 export default function Header({
@@ -40,21 +42,26 @@ export default function Header({
   onVerSitesOffline,
   loading,
   lastUpdate,
-  error
+  error,
+  progresso,
+  verificando,
+  verificandoSite,
+  currentSite
 }: HeaderProps) {
   const { isOpen, onToggle } = useDisclosure();
   const { colorMode, toggleColorMode } = useColorMode();
 
   const bgColor = useColorModeValue('blue.600', 'blue.900');
-  const borderColor = useColorModeValue('blue.500', 'blue.800');
-  const textColor = useColorModeValue('gray.600', 'gray.400');
+  const borderColor = useColorModeValue('blue.500', 'blue.800');  
   const badgeBg = useColorModeValue('green.200', 'green.50');
   const badgeColor = useColorModeValue('green.700', 'green.700');
 
   const tocarAlerta = () => {
     const audio = new Audio('/alerta.mp3');
     audio.currentTime = 0;
-    audio.play().catch(console.error);
+    audio.play().catch((error) => {
+      console.error('❌ Erro ao tocar alerta sonoro:', error);
+    });
   };
 
   return (
@@ -78,16 +85,30 @@ export default function Header({
                 <Text fontSize="xs" color="red.500">
                   Erro: {error}
                 </Text>
-              ) : (<Text fontSize="sm" fontWeight="medium">
-                {lastUpdate || 'Aguardando...'}
-              </Text>)}
+              ) : verificando && progresso ? (
+                <Text fontSize="sm" fontWeight="medium">
+                  Verificando {progresso.atual}/{progresso.total}
+                </Text>
+              ) : verificandoSite ? (
+                <HStack spacing={1}>
+                  <Spinner size="xs" />
+                  <Text fontSize="sm" fontWeight="medium">
+                    Verificando site...
+                  </Text>
+                </HStack>
+              ) : (
+                <Text fontSize="sm" fontWeight="medium">
+                  {lastUpdate || 'Aguardando...'}
+                </Text>
+              )}
 
               <Tooltip label="Verificar agora">
                 <IconButton
                   aria-label="Verificar"
-                  icon={<RepeatIcon />}
+                  icon={(verificando && progresso) ? <Spinner size="xs" colorScheme='green' /> : <RepeatIcon />}
                   colorScheme="green"
                   variant="solid"
+                  disabled={verificando}
                   onClick={onRefresh}
                   isLoading={loading}
                   size="xs"
@@ -95,6 +116,7 @@ export default function Header({
                 />
               </Tooltip>
             </HStack>
+
             <Tooltip label="Alternar tema escuro/claro">
               <IconButton
                 aria-label="Alternar tema"
@@ -166,9 +188,15 @@ export default function Header({
                 <Text fontSize="xs" color="red.500">
                   Erro: {error}
                 </Text>
-              ) : (<Text fontSize="sm" fontWeight="medium">
-                {lastUpdate || 'Aguardando...'}
-              </Text>)}
+              ) : verificando && progresso ? (
+                <Text fontSize="sm" fontWeight="medium">
+                  Verificando {progresso.atual}/{progresso.total}
+                </Text>
+              ) : (
+                <Text fontSize="sm" fontWeight="medium">
+                  {lastUpdate || 'Aguardando...'}
+                </Text>
+              )}
 
               <Tooltip label="Verificar agora">
                 <IconButton

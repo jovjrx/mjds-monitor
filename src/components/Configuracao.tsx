@@ -9,21 +9,14 @@ import {
   SliderTrack,
   SliderFilledTrack,
   SliderThumb,
-  SliderMark,
   Box,
   Button,
   useColorModeValue,
-  Heading,
-  Alert,
-  AlertIcon,
-  List,
-  ListItem,
-  ListIcon,
   Switch,
   FormControl,
   FormLabel,
+  Tooltip,
 } from '@chakra-ui/react';
-import { InfoIcon } from '@chakra-ui/icons';
 
 interface ConfiguracaoProps {
   intervalSeconds: number;
@@ -39,6 +32,8 @@ export default function Configuracao({ intervalSeconds, onIntervalChange, slowTi
   const [alertaSonoro, setAlertaSonoro] = useState(true);
   const [notificacoes, setNotificacoes] = useState(false);
 
+  const [sliderHover, setSliderHover] = useState<{ [key: string]: boolean }>({});
+
   const formatarTempo = (segundos: number) => {
     if (segundos < 60) return `${segundos}s`;
     if (segundos < 3600) return `${Math.floor(segundos / 60)}m`;
@@ -51,98 +46,78 @@ export default function Configuracao({ intervalSeconds, onIntervalChange, slowTi
 
   return (
     <VStack spacing={8} align="stretch">
-      <Box>
-        <Text fontSize="md" fontWeight="medium" color={useColorModeValue('gray.700', 'gray.300')} mb={4}>
-          Intervalo de Verificação
-        </Text>
-        
-        <Box pb={2}>
-          <Slider
-            value={intervalSeconds}
-            onChange={handleSliderChange}
-            min={60}
-            max={300}
-            step={10}
-            colorScheme="blue"
-          >
-            <SliderMark value={60} mt={2} fontSize="sm">
-              1m
-            </SliderMark>
-            <SliderMark value={120} mt={2} fontSize="sm">
-              2m
-            </SliderMark>
-            <SliderMark value={180} mt={2} fontSize="sm">
-              3m
-            </SliderMark>
-            <SliderMark value={300} mt={2} fontSize="sm">
-              5m
-            </SliderMark>
-            
-            <SliderTrack bg={useColorModeValue('gray.200', 'gray.700')}>
-              <SliderFilledTrack bg="blue.500" />
-            </SliderTrack>
-            <SliderThumb boxSize={6} />
-          </Slider>
+      {[
+        {
+          label: 'Intervalo de Verificação',
+          value: intervalSeconds,
+          min: 60,
+          max: 300,
+          step: 10,
+          colorScheme: 'blue',
+          onChange: onIntervalChange,
+          tooltip: formatarTempo(intervalSeconds),
+        },
+        {
+          label: 'Tempo para considerar Lento (ms)',
+          value: slowTimeout,
+          min: 2000,
+          max: 30000,
+          step: 500,
+          colorScheme: 'yellow',
+          onChange: onSlowTimeoutChange,
+          tooltip: `${(slowTimeout / 1000).toFixed(1)}s`,
+        },
+        {
+          label: 'Tempo para considerar Offline (ms)',
+          value: offlineTimeout,
+          min: 5000,
+          max: 60000,
+          step: 1000,
+          colorScheme: 'red',
+          onChange: onOfflineTimeoutChange,
+          tooltip: `${(offlineTimeout / 1000).toFixed(1)}s`,
+        },
+      ].map(({ label, value, min, max, step, colorScheme, onChange, tooltip }, i) => (
+        <Box key={i}>
+          <FormControl>
+            <FormLabel fontSize="sm" color={useColorModeValue('gray.700', 'gray.300')}>
+              {label}
+            </FormLabel>
+            <Slider
+              value={value}
+              min={min}
+              max={max}
+              step={step}
+              onChange={onChange}
+              colorScheme={colorScheme}
+              onMouseEnter={() => setSliderHover((prev) => ({ ...prev, [label]: true }))}
+              onMouseLeave={() => setSliderHover((prev) => ({ ...prev, [label]: false }))}
+            >
+              <SliderTrack bg={useColorModeValue('gray.200', 'gray.700')}>
+                <SliderFilledTrack />
+              </SliderTrack>
+              <Tooltip
+                hasArrow
+                placement="top"
+                isOpen={sliderHover[label]}
+                label={tooltip}
+              >
+                <SliderThumb boxSize={5} />
+              </Tooltip>
+            </Slider>
+            <Text fontSize="sm" color={useColorModeValue('gray.500', 'gray.400')}>
+              Valor atual: <Text as="span" fontWeight="bold">{tooltip}</Text>
+            </Text>
+          </FormControl>
         </Box>
-        
-        <Text fontSize="sm" color={useColorModeValue('gray.500', 'gray.400')} mt={2}>
-          Intervalo atual: <strong>{formatarTempo(intervalSeconds)}</strong>
-        </Text>
-      </Box>
-
-      {/* Limites de tempo para lento/offline */}
-      <Box>
-        <Text fontSize="md" fontWeight="medium" color={useColorModeValue('gray.700', 'gray.300')} mb={4}>
-          Limites de Tempo (ms)
-        </Text>
-        <VStack spacing={4} align="stretch">
-          <FormControl>
-            <FormLabel fontSize="sm">Tempo para considerar Lento (ms)</FormLabel>
-            <Slider
-              value={slowTimeout}
-              onChange={onSlowTimeoutChange}
-              min={2000}
-              max={30000}
-              step={500}
-              colorScheme="yellow"
-            >
-              <SliderTrack bg={useColorModeValue('gray.200', 'gray.700')}>
-                <SliderFilledTrack bg="yellow.500" />
-              </SliderTrack>
-              <SliderThumb boxSize={6} />
-            </Slider>
-            <Text fontSize="sm" color={useColorModeValue('gray.500', 'gray.400')} mt={2}>
-              Lento: <strong>{slowTimeout / 1000}s</strong>
-            </Text>
-          </FormControl>
-          <FormControl>
-            <FormLabel fontSize="sm">Tempo para considerar Offline (ms)</FormLabel>
-            <Slider
-              value={offlineTimeout}
-              onChange={onOfflineTimeoutChange}
-              min={5000}
-              max={60000}
-              step={1000}
-              colorScheme="red"
-            >
-              <SliderTrack bg={useColorModeValue('gray.200', 'gray.700')}>
-                <SliderFilledTrack bg="red.500" />
-              </SliderTrack>
-              <SliderThumb boxSize={6} />
-            </Slider>
-            <Text fontSize="sm" color={useColorModeValue('gray.500', 'gray.400')} mt={2}>
-              Offline: <strong>{offlineTimeout / 1000}s</strong>
-            </Text>
-          </FormControl>
-        </VStack>
-      </Box>
+      ))}
 
       {/* Alertas */}
       <Box>
         <Text fontSize="md" fontWeight="medium" color={useColorModeValue('gray.700', 'gray.300')} mb={4}>
           Alertas e Notificações
         </Text>
-        
+
         <VStack spacing={4} align="stretch">
           <FormControl display="flex" alignItems="center">
             <FormLabel htmlFor="alerta-sonoro" mb="0" fontSize="sm">
@@ -155,7 +130,7 @@ export default function Configuracao({ intervalSeconds, onIntervalChange, slowTi
               colorScheme="blue"
             />
           </FormControl>
-          
+
           <FormControl display="flex" alignItems="center">
             <FormLabel htmlFor="notificacoes" mb="0" fontSize="sm">
               Notificações do navegador

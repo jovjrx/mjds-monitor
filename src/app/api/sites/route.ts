@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { obterSites, salvarSites, gerarId, atualizarSite } from '@/utils/fileManager';
-import { Site } from '@/utils/verificarSite';
+import { obterSites, salvarSites, adicionarSite, atualizarSite, removerSite, gerarId } from '@/utils/cacheManager';
+import { Site } from '@/utils/supabase';
 
 export async function GET() {
   try {
@@ -19,26 +19,24 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const { url, nome, tipoId } = body;
+    const { url, nome, tipo_id } = body;
     
-    if (!url || !nome || !tipoId) {
+    if (!url || !nome || !tipo_id) {
       return NextResponse.json(
         { success: false, error: 'URL, nome e tipo são obrigatórios' },
         { status: 400 }
       );
     }
     
-    const sites = await obterSites();
     const novoSite: Site = {
       id: gerarId(),
       url,
       nome,
-      tipoId,
+      tipo_id: Number(tipo_id),
       ativo: true
     };
     
-    sites.push(novoSite);
-    await salvarSites(sites);
+    await adicionarSite(novoSite);
     
     return NextResponse.json({ success: true, data: novoSite });
   } catch (error: any) {
@@ -62,17 +60,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
     
-    const sites = await obterSites();
-    const sitesFiltrados = sites.filter((site: Site) => site.id !== id);
-    
-    if (sitesFiltrados.length === sites.length) {
-      return NextResponse.json(
-        { success: false, error: 'Site não encontrado' },
-        { status: 404 }
-      );
-    }
-    
-    await salvarSites(sitesFiltrados);
+    await removerSite(id);
     
     return NextResponse.json({ success: true });
   } catch (error: any) {

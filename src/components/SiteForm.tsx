@@ -2,19 +2,27 @@
 
 import { useState, useEffect } from 'react';
 import {
-  VStack,
-  HStack,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  Button,
   FormControl,
   FormLabel,
   Input,
   Select,
-  Button,
+  useToast,
+  useColorModeValue,
+  VStack,
+  HStack,
   Alert,
   AlertIcon,
-  useColorModeValue,
   Text,
 } from '@chakra-ui/react';
-import { Tipo } from '@/utils/verificarSite';
+import { Site, Tipo } from '@/utils/supabase';
 
 interface SiteFormProps {
   onClose: () => void;
@@ -24,7 +32,7 @@ interface SiteFormProps {
 export default function SiteForm({ onClose, editingSiteId }: SiteFormProps) {
   const [nome, setNome] = useState('');
   const [url, setUrl] = useState('');
-  const [tipoId, setTipoId] = useState('');
+  const [tipo_id, settipo_id] = useState<number>(0);
   const [tipos, setTipos] = useState<Tipo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -35,6 +43,11 @@ export default function SiteForm({ onClose, editingSiteId }: SiteFormProps) {
     if (editingSiteId) {
       setIsEditing(true);
       carregarSiteParaEdicao(editingSiteId);
+    } else {
+      setIsEditing(false);
+      setNome('');
+      setUrl('');
+      settipo_id(0);
     }
   }, [editingSiteId]);
 
@@ -45,8 +58,8 @@ export default function SiteForm({ onClose, editingSiteId }: SiteFormProps) {
       
       if (data.success) {
         setTipos(data.data);
-        if (data.data.length > 0 && !tipoId) {
-          setTipoId(data.data[0].id);
+        if (data.data.length > 0 && !tipo_id) {
+          settipo_id(data.data[0].id);
         }
       }
     } catch (error) {
@@ -64,7 +77,7 @@ export default function SiteForm({ onClose, editingSiteId }: SiteFormProps) {
         if (site) {
           setNome(site.nome);
           setUrl(site.url);
-          setTipoId(site.tipoId);
+          settipo_id(site.tipo_id);
         }
       }
     } catch (error) {
@@ -78,7 +91,7 @@ export default function SiteForm({ onClose, editingSiteId }: SiteFormProps) {
     setLoading(true);
     setError('');
 
-    if (!nome.trim() || !url.trim() || !tipoId) {
+    if (!nome.trim() || !url.trim() || !tipo_id) {
       setError('Todos os campos são obrigatórios');
       setLoading(false);
       return;
@@ -91,7 +104,7 @@ export default function SiteForm({ onClose, editingSiteId }: SiteFormProps) {
       const requestBody = {
         nome: nome.trim(),
         url: url.trim(),
-        tipoId,
+        tipo_id: tipo_id,
         ativo: true,
       };
 
@@ -126,10 +139,6 @@ export default function SiteForm({ onClose, editingSiteId }: SiteFormProps) {
   return (
     <form onSubmit={handleSubmit}>
       <VStack spacing={4} align="stretch">
-        <Text fontSize="lg" fontWeight="medium" color={useColorModeValue('gray.700', 'gray.300')}>
-          {isEditing ? 'Editar Site' : 'Adicionar Novo Site'}
-        </Text>
-
         {error && (
           <Alert status="error" borderRadius="md">
             <AlertIcon />
@@ -176,8 +185,8 @@ export default function SiteForm({ onClose, editingSiteId }: SiteFormProps) {
             Tipo
           </FormLabel>
           <Select
-            value={tipoId}
-            onChange={(e) => setTipoId(e.target.value)}
+            value={tipo_id}
+            onChange={(e) => settipo_id(Number(e.target.value))}
             bg={useColorModeValue('white', 'gray.800')}
             borderColor={useColorModeValue('gray.200', 'gray.700')}
             _focus={{

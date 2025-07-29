@@ -1,34 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { OfflineHistoryManager } from '@/utils/offlineHistory';
+import { obterOfflineHistory } from '@/utils/cacheManager';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const siteId = searchParams.get('siteId');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
     const limit = parseInt(searchParams.get('limit') || '50');
     
-    const historyManager = new OfflineHistoryManager();
+    let history = await obterOfflineHistory();
     
-    let history;
-    
-    if (startDate && endDate) {
-      history = historyManager.getOfflineHistoryByDateRange(startDate, endDate);
-    } else if (siteId) {
-      history = historyManager.getOfflineHistory(siteId);
-    } else {
-      history = historyManager.getOfflineHistory();
+    // Filtra por site se especificado
+    if (siteId) {
+      history = history.filter(entry => entry.siteId === siteId);
     }
     
-     history = history.slice(0, limit);
-    
-    const stats = historyManager.getOfflineStats();
+    // Limita o número de resultados
+    history = history.slice(0, limit);
     
     return NextResponse.json({
       success: true,
       data: history,
-      stats,
       timestamp: new Date().toISOString()
     });
   } catch (error: any) {

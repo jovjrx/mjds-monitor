@@ -1,77 +1,105 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { obterSites, salvarMonitoramento, obterMonitoramento } from '@/utils/fileManager';
-import { verificarTodosSites } from '@/utils/verificarSite';
-import { OfflineHistoryManager } from '@/utils/offlineHistory';
-import { SlowHistoryManager } from '@/utils/slowHistory';
+import { verificarSite } from '@/utils/verificarSite';
+import { obterSites } from '@/utils/cacheManager';
+import { adicionarOfflineHistory, adicionarSlowHistory } from '@/utils/cacheManager';
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const slowTimeout = parseInt(searchParams.get('slowTimeout') || '10000');
-    const offlineTimeout = parseInt(searchParams.get('offlineTimeout') || '20000');
-    const sites = await obterSites();
-    const historyManager = new OfflineHistoryManager();
-    const slowHistoryManager = new SlowHistoryManager();
-    
-    if (sites.length === 0) {
-      return NextResponse.json({ 
-        success: true, 
-        data: [],
-        message: 'Nenhum site cadastrado para verificar',
+    const body = await request.json();
+    const { siteId } = body;
+
+    if (siteId) {
+      // Verificação individual
+      const sites = await obterSites();
+      const site = sites.find(s => s.id === siteId);
+      
+      if (!site) {
+        return NextResponse.json(
+          { success: false, error: 'Site não encontrado' },
+          { status: 404 }
+        );
+      }
+
+      const status = await verificarSite(site);
+      
+      // Adiciona ao histórico se necessário
+      if (status.status === 'offline') {
+        await adicionarOfflineHistory({
+          siteId: site.id,
+          siteName: site.nome,
+          url: site.url,
+          timestamp: new Date().toISOString(),
+          error: status.error
+        });
+      } else if (status.status === 'slow') {
+        await adicionarSlowHistory({
+          siteId: site.id,
+          siteName: site.nome,
+          url: site.url,
+          timestamp: new Date().toISOString(),
+          responseTime: status.responseTime
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: status,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      // Verificação completa
+      const sites = await obterSites();
+      const resultados: Record<string, any> = {};
+
+      for (const site of sites) {
+        try {
+          const status = await verificarSite(site);
+          resultados[site.id] = status;
+          
+          // Adiciona ao histórico se necessário
+          if (status.status === 'offline') {
+            await adicionarOfflineHistory({
+              siteId: site.id,
+              siteName: site.nome,
+              url: site.url,
+              timestamp: new Date().toISOString(),
+              error: status.error
+            });
+          } else if (status.status === 'slow') {
+            await adicionarSlowHistory({
+              siteId: site.id,
+              siteName: site.nome,
+              url: site.url,
+              timestamp: new Date().toISOString(),
+              responseTime: status.responseTime
+            });
+          }
+        } catch (error) {
+          console.error(`Erro ao verificar site ${site.nome}:`, error);
+          resultados[site.id] = {
+            id: site.id,
+            url: site.url,
+            nome: site.nome,
+            tipo_id: site.tipo_id,
+            status: 'offline',
+            statusCode: 0,
+            responseTime: 0,
+            lastChecked: new Date().toISOString(),
+            error: 'Erro na verificação'
+          };
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: resultados,
         timestamp: new Date().toISOString()
       });
     }
-    
-    const monitoramentoAnterior = await obterMonitoramento();
-    
-    const resultados = await verificarTodosSites(sites, slowTimeout, offlineTimeout);
-
-    resultados.forEach(resultado => {
-      const statusAnterior = monitoramentoAnterior[resultado.id]?.status;
-
-      if (statusAnterior === 'online' && resultado.status === 'offline') {
-        historyManager.siteWentOffline(
-          resultado.id,
-          resultado.nome,
-          resultado.url,
-          resultado.statusCode,
-          resultado.error
-        );
-      } else if (statusAnterior === 'offline' && resultado.status === 'online') {
-        historyManager.siteWentOnline(resultado.id);
-      }
-
-      if (resultado.status === 'slow') {
-        slowHistoryManager.recordSlow(
-          resultado.id,
-          resultado.nome,
-          resultado.url,
-          resultado.responseTime
-        );
-      }
-    });
-    
-    const monitoramento: Record<string, any> = {};
-    resultados.forEach(resultado => {
-      monitoramento[resultado.id] = resultado;
-    });
-    
-    await salvarMonitoramento(monitoramento);
-    
-    const offlineStats = historyManager.getOfflineStats();
-    const currentOfflineSites = historyManager.getCurrentOfflineSites();
-    
-    return NextResponse.json({ 
-      success: true, 
-      data: resultados,
-      offlineStats,
-      currentOfflineSites,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Erro na verificação:', error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }

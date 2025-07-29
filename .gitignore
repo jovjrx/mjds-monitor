@@ -16,6 +16,10 @@
 # production
 /build
 
+/data/slow_history.json
+/data/offline_history.json
+/data/monitoramento.json
+
 # misc
 .DS_Store
 *.pem

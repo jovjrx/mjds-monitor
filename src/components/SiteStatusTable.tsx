@@ -1,6 +1,3 @@
-'use client';
-
-import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   VStack,
@@ -14,112 +11,67 @@ import {
   Th,
   Td,
   Badge,
-  Alert,
-  AlertIcon,
   useColorModeValue,
   IconButton,
   Tooltip,
-  useDisclosure,
   Tabs,
   TabList,
   Tab,
   TabPanels,
   TabPanel,
+  Spinner,
+  Progress,
+  Link,
 } from '@chakra-ui/react';
-import { ExternalLinkIcon, EditIcon } from '@chakra-ui/icons';
-import { SiteStatus, Tipo } from '@/utils/verificarSite';
+import { ExternalLinkIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import { SiteStatus } from '@/utils/verificarSite';
 
 interface SiteStatusTableProps {
   intervalSeconds: number;
-  onEditSite: (siteId: string) => void;
+  onEditSite: (siteId: string) => Promise<void>;
+  onDeleteSite: (siteId: string) => Promise<void>;
   onRefresh: () => void;
   onMonitoramentoUpdate: (monitoramento: Record<string, SiteStatus>) => void;
-  loading: boolean;
-  lastUpdate: string;
-  error: string;
+  possuiOffline: boolean;
   slowTimeout: number;
   offlineTimeout: number;
-}
-
-interface OfflineStats {
-  totalIncidents: number;
-  currentOffline: number;
-  totalOfflineTime: number;
-  averageDowntime: number;
-}
-
-
-function getOfflineSeen(): string[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    return JSON.parse(sessionStorage.getItem('offline_seen') || '[]');
-  } catch {
-    return [];
-  }
-}
-function setOfflineSeen(ids: string[]) {
-  if (typeof window === 'undefined') return;
-  sessionStorage.setItem('offline_seen', JSON.stringify(ids));
+  sites: any[];
+  tipos: any[];
+  monitoramento: Record<string, SiteStatus>;
+  dataLoading: boolean;
+  primeiraVerificacao: boolean;
+  progresso: any;
+  editingLoading: string;
+  siteVerificando: string;
 }
 
 export default function SiteStatusTable({
-  intervalSeconds,
   onEditSite,
-  onRefresh,
-  onMonitoramentoUpdate,
-  loading,
-  lastUpdate,
-  error,
+  onDeleteSite,
+  possuiOffline,
   slowTimeout,
-  offlineTimeout
+  offlineTimeout,
+  monitoramento,
+  sites,
+  tipos,
+  dataLoading,
+  primeiraVerificacao,
+  progresso,
+  editingLoading,
+  siteVerificando,
 }: SiteStatusTableProps) {
-  const [monitoramento, setMonitoramento] = useState<Record<string, SiteStatus>>({});
-  const [tipos, setTipos] = useState<Tipo[]>([]);
-  const [offlineStats, setOfflineStats] = useState<OfflineStats | null>(null);
-  const [offlineHistory, setOfflineHistory] = useState<any[]>([]);
-  const [selectedTab, setSelectedTab] = useState(0);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const { isOpen, onToggle } = useDisclosure();
-
-
 
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
-
-  const alertText = useColorModeValue('red.700', 'red.300');
-  const alertSubText = useColorModeValue('red.500', 'red.100');
-  const emptyIconColor = useColorModeValue('gray.500', 'gray.400');
-  const emptyTitleColor = useColorModeValue('gray.900', 'gray.100');
+  const tableTextColor = useColorModeValue('gray.600', 'gray.400');
+  const emptyIconColor = useColorModeValue('gray.400', 'gray.500');
+  const emptyTitleColor = useColorModeValue('gray.600', 'gray.300');
   const emptyTextColor = useColorModeValue('gray.500', 'gray.400');
-
   const badgeTipo = useColorModeValue('blue', 'blue');
-  const badgeFrontdoorOn = useColorModeValue('green', 'green');
-  const badgeFrontdoorOff = useColorModeValue('gray', 'gray');
-  const badgeCacheOn = useColorModeValue('green', 'green');
-  const badgeCacheOff = useColorModeValue('gray', 'gray');
-  const badgeCdnPadrao = useColorModeValue('gray', 'gray');
-  const badgeCdnCustom = useColorModeValue('purple', 'purple');
-  const tableTextColor = useColorModeValue('gray.500', 'gray.300');
-  const tableBgHover = useColorModeValue('gray.100', 'gray.900');
 
-  const obterNomeTipo = (tipoId: string) => {
-    const tipo = tipos.find(t => t.id === tipoId);
-    return tipo?.nome || 'Desconhecido';
-  };
-
-  const obterStatusIcon = (status: string) => {
-    switch (status) {
-      case 'online':
-        return '🟢';
-      case 'offline':
-        return '🔴';
-      case 'rate_limited':
-        return '⚠️';
-      case 'slow':
-        return '🐢';
-      default:
-        return '❓';
-    }
+  const obterNomeTipo = (tipo_id: number) => {
+    const tipo = tipos.find(t => t.id === tipo_id);
+    return tipo ? tipo.nome : 'Desconhecido';
   };
 
   const obterStatusColor = (status: string) => {
@@ -128,17 +80,41 @@ export default function SiteStatusTable({
         return 'green';
       case 'offline':
         return 'red';
-      case 'rate_limited':
-        return 'yellow';
       case 'slow':
+        return 'yellow';
+      case 'rate_limited':
         return 'orange';
+      case 'verificando':
+        return 'blue';
+      case 'aguardando':
+        return 'gray';
       default:
         return 'gray';
     }
   };
 
+  const obterStatusText = (status: string) => {
+    switch (status) {
+      case 'online':
+        return 'Online';
+      case 'offline':
+        return 'Offline';
+      case 'slow':
+        return 'Lento';
+      case 'rate_limited':
+        return 'Rate Limited';
+      case 'verificando':
+        return 'Verificando';
+      case 'aguardando':
+        return 'Aguardando';
+      default:
+        return 'Aguardando';
+    }
+  };
+
   const formatarTempo = (ms: number) => {
-    return `${ms}ms`;
+    if (ms < 1000) return `${ms}ms`;
+    return `${(ms / 1000).toFixed(1)}s`;
   };
 
   const formatarData = (dataString: string) => {
@@ -151,109 +127,37 @@ export default function SiteStatusTable({
     return `${Math.floor(segundos / 3600)}h`;
   };
 
-  const tocarAlerta = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(console.error);
+  const sitesComStatus = sites.map(site => {
+    const status = monitoramento[site.id];
+    if (status) {
+      return status;
     }
-  };
-
-
-
-  const verificarSites = async () => {
-    try {
-      const response = await fetch(`/api/verificar?slowTimeout=${slowTimeout}&offlineTimeout=${offlineTimeout}`);
-      const data = await response.json();
-
-      if (data.success) {
-        const monitoramentoObj: Record<string, SiteStatus> = {};
-
-        if (Array.isArray(data.data)) {
-          data.data.forEach((site: SiteStatus) => {
-            monitoramentoObj[site.id] = site;
-          });
-        }
-
-        setMonitoramento(monitoramentoObj);
-        onMonitoramentoUpdate(monitoramentoObj);
-
-        // Atualizar estatísticas
-        if (data.offlineStats) {
-          setOfflineStats(data.offlineStats);
-        }
-        if (data.currentOfflineSites) {
-          setOfflineHistory(data.currentOfflineSites);
-        }
-
-        // Atualizar última verificação se for verificação automática
-        if (data.timestamp) {
-          // Chamar onRefresh para atualizar o timestamp no header
-          onRefresh();
-        }
-      }
-    } catch (error) {
-      console.error('Erro ao verificar sites:', error);
-    }
-  };
-
-  const carregarTipos = async () => {
-    try {
-      const response = await fetch('/api/tipos');
-      const data = await response.json();
-
-      if (data.success) {
-        setTipos(data.data);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar tipos:', error);
-    }
-  };
-
-  const carregarMonitoramento = async () => {
-    try {
-      const response = await fetch('/api/monitoramento');
-      const data = await response.json();
-
-      if (data.success) {
-        setMonitoramento(data.data);
-        onMonitoramentoUpdate(data.data);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar monitoramento:', error);
-    }
-  };
-
-  useEffect(() => {
-    carregarTipos();
-    carregarMonitoramento();
-    verificarSites();
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(verificarSites, intervalSeconds * 1000);
-    return () => clearInterval(interval);
-  }, [intervalSeconds]);
-
-  const sites = Object.values(monitoramento);
-  const sitesOffline = sites.filter(site => site.status === 'offline' || site.status === 'rate_limited')
-    .map(site => ({
-      ...site,
-      visto: getOfflineSeen().includes(site.id)
-    }));
+    // Se não há status, cria um status básico
+    return {
+      id: site.id,
+      url: site.url,
+      nome: site.nome,
+      tipo_id: site.tipo_id,
+      status: 'aguardando' as const,
+      statusCode: 0,
+      responseTime: 0,
+      lastChecked: '',
+      error: 'Não verificado'
+    };
+  });
 
   const sitesPorTipo = tipos.map(tipo => ({
     tipo,
-    sites: sites.filter(site => site.tipoId === tipo.id)
+    sites: sitesComStatus.filter(site => site.tipo_id == tipo.id)
   }));
 
-  // Componente da tabela reutilizável
   const SiteTable = ({ sitesToShow }: { sitesToShow: SiteStatus[] }) => (
     <Box flex="1" h="100%" display="flex" flexDirection="column">
       <Box flex="1" overflow="auto" minH="0">
         <Table variant="striped" size="md" minW="1200px">
           <Thead position="sticky" top={0} zIndex={10} bg={bgColor} borderColor={borderColor}>
             <Tr>
-              <Th minW="200px" p={1} px={2}>Site</Th>
+              <Th minW="240px" p={1} px={2}>Site</Th>
               <Th minW="120px" p={1} px={2} textAlign={'center'}>Status</Th>
               <Th minW="120px" p={1} px={2} textAlign={'center'}>Tipo</Th>
               <Th minW="120px" p={1} px={2} textAlign={'center'}>Frontdoor</Th>
@@ -270,30 +174,28 @@ export default function SiteStatusTable({
                 <Td minW="200px" p={1} px={2} textAlign={'center'}>
                   <VStack align="start" spacing={1}>
                     <Text fontWeight="medium" fontSize={'sm'}>{site.nome}</Text>
-                    <Text fontSize="xs" color={tableTextColor} noOfLines={1}>
-                      {site.url}
-                    </Text>
+                    <Link href={site.url} target="_blank" rel="noopener noreferrer" color={tableTextColor}>
+                      <Text fontSize="xs" color={tableTextColor} noOfLines={1}>
+                        {site.url}
+                      </Text>
+                    </Link>
                   </VStack>
                 </Td>
                 <Td minW="120px" p={1} px={2} textAlign={'center'}>
                   <VStack align="center" spacing={1}>
-                    <HStack spacing={2}>
-
+                    <HStack spacing={1}>
                       <Badge
                         rounded={'lg'}
                         colorScheme={obterStatusColor(site.status)}
                         variant="subtle"
                       >
-                        {site.status === 'online'
-                          ? '✅ Online'
-                          : site.status === 'offline'
-                          ? '❌ Offline'
-                          : site.status === 'slow'
-                          ? '🐢 Lento'
-                          : '⚠️ Rate Limited'}
+                        {obterStatusText(site.status)}
                       </Badge>
+                      {siteVerificando === site.id && (
+                        <Spinner size="xs" color="blue.500" />
+                      )}
                     </HStack>
-                    {site.statusCode > 0 && (
+                    {site.statusCode > 0 && siteVerificando !== site.id && (
                       <Text fontSize="xs" color={tableTextColor}>
                         HTTP {site.statusCode}
                       </Text>
@@ -302,51 +204,63 @@ export default function SiteStatusTable({
                 </Td>
                 <Td minW="120px" p={1} px={2} textAlign={'center'}>
                   <Badge rounded={'lg'} colorScheme={badgeTipo} variant="subtle">
-                    {obterNomeTipo(site.tipoId)}
+                    {obterNomeTipo(site.tipo_id)}
                   </Badge>
                 </Td>
                 <Td minW="120px" p={1} px={2} textAlign={'center'}>
-                  <Badge
-                    rounded={'lg'}
-                    colorScheme={site.isAzureFrontDoor ? badgeFrontdoorOn : badgeFrontdoorOff}
-                    variant="subtle"
-                  >
-                    {site.isAzureFrontDoor ? '✅ Sim' : '❌ Não'}
-                  </Badge>
-                </Td>
-                <Td minW="120px" p={1} px={2} textAlign={'center'}>
-                  <VStack align="center" spacing={1}>
-                    <Badge rounded={'lg'}
-                      colorScheme={site.isUsingCache ? badgeCacheOn : badgeCacheOff}
+                  {primeiraVerificacao && !site.isAzureFrontDoor && !site.isUsingCache ? (
+                    <Text color={tableTextColor}>-</Text>
+                  ) : (
+                    <Badge
+                      rounded={'lg'}
+                      colorScheme={site.isAzureFrontDoor ? 'green' : 'red'}
                       variant="subtle"
                     >
-                      {site.isUsingCache ? '✅ Ativo' : '❌ Inativo'}
+                      {site.isAzureFrontDoor ? 'Ativo' : 'Inativo'}
                     </Badge>
-                    {site.cacheAge !== undefined && (
-                      <Text fontSize="xs" color={tableTextColor}>
-                        Idade: {formatarTempoCache(site.cacheAge)}
-                      </Text>
-                    )}
-                    {site.cacheMaxAge !== undefined && (
-                      <Text fontSize="xs" color={tableTextColor}>
-                        Max: {formatarTempoCache(site.cacheMaxAge)}
-                      </Text>
-                    )}
-                  </VStack>
+                  )}
+                </Td>
+                <Td minW="120px" p={1} px={2} textAlign={'center'}>
+                  {primeiraVerificacao && !site.isAzureFrontDoor && !site.isUsingCache ? (
+                    <Text color={tableTextColor}>-</Text>
+                  ) : (
+                    <VStack align="center" spacing={1}>
+                      <Badge rounded={'lg'}
+                        colorScheme={site.isUsingCache ? 'green' : 'red'}
+                        variant="subtle"
+                      >
+                        {site.isUsingCache ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                      {site.cacheAge !== undefined && (
+                        <Text fontSize="xs" color={tableTextColor}>
+                          Idade: {formatarTempoCache(site.cacheAge)}
+                        </Text>
+                      )}
+                      {site.cacheMaxAge !== undefined && (
+                        <Text fontSize="xs" color={tableTextColor}>
+                          Max: {formatarTempoCache(site.cacheMaxAge)}
+                        </Text>
+                      )}
+                    </VStack>
+                  )}
                 </Td>
                 <Td minW="150px" p={1} px={2} textAlign={'center'}>
-                  {site.cdnVersion ? (
+                  {primeiraVerificacao && !site.isAzureFrontDoor && !site.isUsingCache ? (
+                    <Text color={tableTextColor}>-</Text>
+                  ) : site?.cdnVersion ? (
                     <VStack align="start" spacing={1}>
                       <Badge
                         rounded={'lg'}
-                        colorScheme={site.cdnVersion === 'Padrão' ? badgeCdnPadrao : badgeCdnCustom}
+                        colorScheme={site.cdnVersion === 'Padrão' ? 'green' : 'purple'}
                         variant="subtle"
                       >
                         {site.cdnVersion}
                       </Badge>
                       {site.cdnLink && (
                         <Text fontSize="xs" color={tableTextColor} noOfLines={1}>
-                          {site.cdnLink}
+                          {site.cdnVersion === 'Padrão'
+                            ? new URL(site.cdnLink).origin
+                            : site.cdnLink}
                         </Text>
                       )}
                     </VStack>
@@ -355,20 +269,28 @@ export default function SiteStatusTable({
                   )}
                 </Td>
                 <Td minW="120px" p={1} px={2} textAlign={'center'}>
-                  <Text
-                    fontFamily="mono"
-                    color={
-                      site.responseTime < 1000 ? 'green.500' :
-                        site.responseTime < 3000 ? 'yellow.500' : 'red.500'
-                    }
-                  >
-                    {formatarTempo(site.responseTime)}
-                  </Text>
+                  {primeiraVerificacao && !site.isAzureFrontDoor && !site.isUsingCache ? (
+                    <Text color={tableTextColor}>-</Text>
+                  ) : (
+                    <Text
+                      fontFamily="mono"
+                      color={
+                        site.responseTime < slowTimeout ? 'green.500' :
+                          site.responseTime < offlineTimeout ? 'yellow.500' : 'red.500'
+                      }
+                    >
+                      {formatarTempo(site.responseTime)}
+                    </Text>
+                  )}
                 </Td>
                 <Td minW="150px" textAlign={'center'}>
-                  <Text fontSize="sm">
-                    {formatarData(site.lastChecked)}
-                  </Text>
+                  {primeiraVerificacao && !site.isAzureFrontDoor && !site.isUsingCache ? (
+                    <Text color={tableTextColor}>-</Text>
+                  ) : (
+                    <Text fontSize="sm">
+                      {formatarData(site.lastChecked)}
+                    </Text>
+                  )}
                 </Td>
                 <Td minW="100px" position="sticky" bg={bgColor} borderColor={borderColor} p={1} px={2} textAlign={'center'} right={0}>
                   <HStack spacing={2} justify="center">
@@ -385,11 +307,24 @@ export default function SiteStatusTable({
                     <Tooltip label="Editar Site">
                       <IconButton
                         aria-label="Editar site"
-                        icon={<EditIcon />}
+                        icon={editingLoading === site.id ? <Spinner size="sm" /> : <EditIcon />}
                         onClick={() => onEditSite(site.id)}
                         size="sm"
                         colorScheme="gray"
                         variant="ghost"
+                        isLoading={editingLoading === site.id}
+                        isDisabled={editingLoading !== ''}
+                      />
+                    </Tooltip>
+                    <Tooltip label="Excluir Site">
+                      <IconButton
+                        aria-label="Excluir site"
+                        icon={<DeleteIcon />}
+                        onClick={() => onDeleteSite(site.id)}
+                        size="sm"
+                        colorScheme="red"
+                        variant="ghost"
+                        isDisabled={editingLoading !== ''}
                       />
                     </Tooltip>
                   </HStack>
@@ -403,11 +338,7 @@ export default function SiteStatusTable({
   );
 
   return (
-    <Box h={sitesOffline.length > 0 ? "calc(100vh - 168px)" : "calc(100vh - 90px)"} display="flex" flexDirection="column">
-      <audio ref={audioRef} preload="auto">
-        <source src="/alerta.mp3" type="audio/mpeg" />
-      </audio>
-
+    <Box h={possuiOffline ? "calc(100vh - 168px)" : "calc(100vh - 90px)"} display="flex" flexDirection="column">
       <Box
         bg={bgColor}
         borderRadius="md"
@@ -419,7 +350,26 @@ export default function SiteStatusTable({
         flexDirection="column"
         overflow="hidden"
       >
-        {sites.length === 0 ? (
+        {dataLoading ? (
+          <Box
+            flex="1"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            p={12}
+            textAlign="center"
+          >
+            <VStack spacing={4}>
+              <Spinner size="md"  />
+              <Text fontSize="lg" fontWeight="medium" color={emptyTitleColor}>
+                Carregando dados...
+              </Text>
+              <Text color={emptyTextColor}>
+                Aguarde enquanto os dados são carregados.
+              </Text>
+            </VStack>
+          </Box>
+        ) : sites.length === 0 ? (
           <Box
             flex="1"
             display="flex"
@@ -440,12 +390,13 @@ export default function SiteStatusTable({
               <Text color={emptyTextColor}>
                 Adicione sites para começar o monitoramento automático.
               </Text>
+              <Text fontSize="xs" color="gray.500">
+                Debug: Sites={sites.length}, ComStatus={sites.length}, Tipos={tipos.length}
+              </Text>
             </VStack>
           </Box>
         ) : (
           <Tabs
-            index={selectedTab}
-            onChange={setSelectedTab}
             flex="1"
             colorScheme="blue"
             display="flex"
@@ -455,9 +406,9 @@ export default function SiteStatusTable({
             h="100%"
           >
             <TabList p={2} bg={bgColor} borderColor={borderColor}>
-              {sitesPorTipo.map(({ tipo, sites: sitesDoTipo }, index) => (
+              {sitesPorTipo.sort((a, b) => a.tipo.id - b.tipo.id).map(({ tipo, sites: sitesDoTipo }, index) => (
                 <Tab key={tipo.id} rounded={'md'}>
-                  <Text fontSize={{base: 'xs', md: 'sm'}}>{tipo.nome} ({sitesDoTipo.length})</Text>
+                  <Text fontSize={{ base: 'xs', md: 'sm' }}>{tipo.nome} ({sitesDoTipo.length})</Text>
                 </Tab>
               ))}
             </TabList>
@@ -472,7 +423,7 @@ export default function SiteStatusTable({
           </Tabs>
         )}
       </Box>
- 
+
     </Box>
   );
 } 

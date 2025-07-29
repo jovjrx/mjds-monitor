@@ -1,16 +1,16 @@
 [
   {
-    "id": "1",
+    "id": 1,
     "nome": "Institucional",
     "descricao": "Sites institucionais e corporativos"
   },
   {
-    "id": "2", 
+    "id": 2, 
     "nome": "Área restrita",
     "descricao": "Área restrita do participante"
   },
   {
-    "id": "3",
+    "id": 3,
     "nome": "Sistema",
     "descricao": "Sistema de gestão"
   }
