@@ -10,6 +10,7 @@ import Configuracao from '@/components/Configuracao';
 import OfflineSitesModal from '@/components/OfflineSitesModal';
 import Modal from '@/components/Modal';
 import { SiteStatus } from '@/utils/verificarSite';
+import { ALERTA_AUDIO_URL } from '@/utils/constants';
 
 function getOfflineSeen(): string[] {
   if (typeof window === 'undefined') return [];
@@ -440,7 +441,7 @@ export default function Home() {
   return (
     <Box minH="100vh" bg={bgColor} display="flex" flexDirection="column">
       <audio ref={audioRef} preload="auto">
-        <source src="/alerta.mp3" type="audio/mpeg" />
+        <source src={ALERTA_AUDIO_URL} type="audio/ogg" />
       </audio>
 
       <Header 
