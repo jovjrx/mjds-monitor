@@ -18,6 +18,7 @@ import {
 } from '@chakra-ui/react';
 import { HamburgerIcon, CloseIcon, RepeatIcon, SunIcon, MoonIcon, BellIcon, SettingsIcon, AddIcon, WarningIcon } from '@chakra-ui/icons';
 import { useColorMode } from '@chakra-ui/react';
+import { ALERTA_AUDIO_URL } from '@/utils/constants';
 
 interface HeaderProps {
   onConfigClick: () => void;
@@ -57,7 +58,7 @@ export default function Header({
   const badgeColor = useColorModeValue('green.700', 'green.700');
 
   const tocarAlerta = () => {
-    const audio = new Audio('/alerta.mp3');
+    const audio = new Audio(ALERTA_AUDIO_URL);
     audio.currentTime = 0;
     audio.play().catch((error) => {
       console.error('❌ Erro ao tocar alerta sonoro:', error);
