@@ -114,16 +114,17 @@ const detectarCDNMJDS = (html: string): { provider?: string; isUsingCDN: boolean
         
         // Procura em TODAS as URLs por uma que tenha versão no path
         for (const url of allUrls) {
-          // Padrão 1: Versão no path como /1.34.231.0/ (formato X.XX.XXX.X ou similar)
-          const pathVersionMatch = url.match(/\/(\d+\.\d+\.\d+\.\d+)\//);
+          // Padrão 1: Versão no path como /1.34.231.0/ ou /1.34.231.0 (formato X.XX.XXX.X ou similar)
+          // Aceita com ou sem barra no final, ou no final da URL
+          const pathVersionMatch = url.match(/\/(\d+\.\d+\.\d+\.\d+)(?:[\/"'\s>]|$)/);
           if (pathVersionMatch && pathVersionMatch[1]) {
             version = pathVersionMatch[1];
             linkComVersao = url;
             break; // Encontrou versão, para de procurar
           }
           
-          // Padrão 2: Versão no path como /v1.2.3/ ou /1.2.3/
-          const simpleVersionMatch = url.match(/\/v?(\d+\.\d+\.\d+)\//);
+          // Padrão 2: Versão no path como /v1.2.3/ ou /1.2.3 (com ou sem barra final)
+          const simpleVersionMatch = url.match(/\/v?(\d+\.\d+\.\d+)(?:[\/"'\s>]|$)/);
           if (simpleVersionMatch && simpleVersionMatch[1]) {
             version = simpleVersionMatch[1];
             linkComVersao = url;
