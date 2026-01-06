@@ -90,6 +90,20 @@ const detectarAzureFrontDoor = (headers: any): boolean => {
     (via && via.toLowerCase().includes('azure')));
 };
 
+// Verifica se uma string parece ser uma versão (contém números e pontos, tipo 1.34.231.0)
+const pareceVersao = (str: string): boolean => {
+  // Versão deve ter pelo menos um ponto e começar com número
+  // Exemplos válidos: 1.34.231.0, 2.0.0, v1.2.3
+  // Exemplos inválidos: static, Content, Geral, js
+  if (!str || str.length === 0) return false;
+  
+  // Remove 'v' do início se houver
+  const semV = str.startsWith('v') ? str.substring(1) : str;
+  
+  // Deve ter formato de versão: números separados por pontos
+  return /^\d+(\.\d+)+$/.test(semV);
+};
+
 const detectarCDNMJDS = (html: string): { provider?: string; isUsingCDN: boolean; version?: string; link?: string } => {
   if (!html || typeof html !== 'string') return { isUsingCDN: false };
 
@@ -98,12 +112,12 @@ const detectarCDNMJDS = (html: string): { provider?: string; isUsingCDN: boolean
   for (const domain of cdnDomains) {
     if (html.includes(domain)) {
       // Regex para encontrar TODAS as URLs do CDN
-      const urlPattern = new RegExp(`https?://${domain.replace(/\./g, '\\.')}[^"'\s>]+`, 'gi');
+      const urlPattern = new RegExp(`https?://${domain.replace(/\./g, '\\.')}[^"'\s>]*`, 'gi');
       const allUrls = html.match(urlPattern) || [];
       
       if (allUrls.length === 0) {
         // Tenta sem protocolo
-        const urlPattern2 = new RegExp(`//${domain.replace(/\./g, '\\.')}[^"'\s>]+`, 'gi');
+        const urlPattern2 = new RegExp(`//${domain.replace(/\./g, '\\.')}[^"'\s>]*`, 'gi');
         const urls2 = html.match(urlPattern2) || [];
         allUrls.push(...urls2);
       }
@@ -112,47 +126,34 @@ const detectarCDNMJDS = (html: string): { provider?: string; isUsingCDN: boolean
         let version = 'Padrão';
         let linkComVersao = allUrls[0];
         
-        // Procura em TODAS as URLs por uma que tenha versão no path
+        // Procura em TODAS as URLs pela primeira pasta após o domínio
         for (const url of allUrls) {
-          // Padrão 1: Versão no path como /1.34.231.0/ ou /1.34.231.0 (formato X.XX.XXX.X ou similar)
-          // Aceita com ou sem barra no final, ou no final da URL
-          const pathVersionMatch = url.match(/\/(\d+\.\d+\.\d+\.\d+)(?:[\/"'\s>]|$)/);
-          if (pathVersionMatch && pathVersionMatch[1]) {
-            version = pathVersionMatch[1];
-            linkComVersao = url;
-            break; // Encontrou versão, para de procurar
-          }
-          
-          // Padrão 2: Versão no path como /v1.2.3/ ou /1.2.3 (com ou sem barra final)
-          const simpleVersionMatch = url.match(/\/v?(\d+\.\d+\.\d+)(?:[\/"'\s>]|$)/);
-          if (simpleVersionMatch && simpleVersionMatch[1]) {
-            version = simpleVersionMatch[1];
-            linkComVersao = url;
-            break;
-          }
-        }
-        
-        // Se não encontrou no path, procura na query string
-        if (version === 'Padrão') {
-          for (const url of allUrls) {
-            const versionPatterns = [
-              /[?&]v=([^"'\s&]+)/i,
-              /[?&]version=([^"'\s&]+)/i,
-              /[?&]ver=([^"'\s&]+)/i,
-            ];
+          try {
+            // Extrai o path da URL
+            // Ex: https://cs.mjds.com.br/1.34.231.0/static/... -> /1.34.231.0/static/...
+            const domainIndex = url.indexOf(domain);
+            if (domainIndex === -1) continue;
             
-            for (const vPattern of versionPatterns) {
-              const versionMatch = url.match(vPattern);
-              if (versionMatch && versionMatch[1]) {
-                // Ignora timestamps muito longos (como 639032280270510241)
-                if (versionMatch[1].length <= 20) {
-                  version = versionMatch[1];
-                  linkComVersao = url;
-                  break;
-                }
+            const pathStart = domainIndex + domain.length;
+            const path = url.substring(pathStart);
+            
+            // Pega a primeira "pasta" do path (entre as primeiras duas barras)
+            // Ex: /1.34.231.0/static/... -> 1.34.231.0
+            const pathParts = path.split('/').filter(p => p.length > 0);
+            
+            if (pathParts.length > 0) {
+              const primeiraPasta = pathParts[0];
+              
+              // Verifica se a primeira pasta parece uma versão
+              if (pareceVersao(primeiraPasta)) {
+                version = primeiraPasta;
+                linkComVersao = url;
+                break; // Encontrou versão, para de procurar
               }
             }
-            if (version !== 'Padrão') break;
+          } catch (e) {
+            // Ignora erros de parsing
+            continue;
           }
         }
         
