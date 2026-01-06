@@ -97,58 +97,65 @@ const detectarCDNMJDS = (html: string): { provider?: string; isUsingCDN: boolean
   
   for (const domain of cdnDomains) {
     if (html.includes(domain)) {
-      // Regex para encontrar URLs do CDN
-      const urlPatterns = [
-        new RegExp(`https?://${domain.replace(/\./g, '\\.')}[^"'\s>]+`, 'gi'),
-        new RegExp(`//${domain.replace(/\./g, '\\.')}[^"'\s>]+`, 'gi'),
-        new RegExp(`${domain.replace(/\./g, '\\.')}[^"'\s>]+`, 'gi')
-      ];
+      // Regex para encontrar TODAS as URLs do CDN
+      const urlPattern = new RegExp(`https?://${domain.replace(/\./g, '\\.')}[^"'\s>]+`, 'gi');
+      const allUrls = html.match(urlPattern) || [];
       
-      let urlMatches: RegExpMatchArray | null = null;
-      let matchedPattern = '';
-      
-      for (const pattern of urlPatterns) {
-        urlMatches = html.match(pattern);
-        if (urlMatches && urlMatches.length > 0) {
-          matchedPattern = urlMatches[0];
-          break;
-        }
+      if (allUrls.length === 0) {
+        // Tenta sem protocolo
+        const urlPattern2 = new RegExp(`//${domain.replace(/\./g, '\\.')}[^"'\s>]+`, 'gi');
+        const urls2 = html.match(urlPattern2) || [];
+        allUrls.push(...urls2);
       }
       
-      if (urlMatches && urlMatches.length > 0) {
+      if (allUrls.length > 0) {
         let version = 'Padrão';
+        let linkComVersao = allUrls[0];
         
-        // Padrão 1: Versão no path como /1.34.231.0/ (formato X.XX.XXX.X ou similar)
-        // Exemplos: /1.34.231.0/, /2.0.0.1/, /10.5.3.2/
-        const pathVersionMatch = matchedPattern.match(/\/(\d+\.\d+\.\d+\.\d+)\//);
-        if (pathVersionMatch && pathVersionMatch[1]) {
-          version = pathVersionMatch[1];
-        } else {
+        // Procura em TODAS as URLs por uma que tenha versão no path
+        for (const url of allUrls) {
+          // Padrão 1: Versão no path como /1.34.231.0/ (formato X.XX.XXX.X ou similar)
+          const pathVersionMatch = url.match(/\/(\d+\.\d+\.\d+\.\d+)\//);
+          if (pathVersionMatch && pathVersionMatch[1]) {
+            version = pathVersionMatch[1];
+            linkComVersao = url;
+            break; // Encontrou versão, para de procurar
+          }
+          
           // Padrão 2: Versão no path como /v1.2.3/ ou /1.2.3/
-          const simpleVersionMatch = matchedPattern.match(/\/v?(\d+\.\d+(?:\.\d+)?)\//);
+          const simpleVersionMatch = url.match(/\/v?(\d+\.\d+\.\d+)\//);
           if (simpleVersionMatch && simpleVersionMatch[1]) {
             version = simpleVersionMatch[1];
-          } else {
-            // Padrão 3: Versão como query string ?v=XXX
+            linkComVersao = url;
+            break;
+          }
+        }
+        
+        // Se não encontrou no path, procura na query string
+        if (version === 'Padrão') {
+          for (const url of allUrls) {
             const versionPatterns = [
               /[?&]v=([^"'\s&]+)/i,
               /[?&]version=([^"'\s&]+)/i,
               /[?&]ver=([^"'\s&]+)/i,
-              /v(\d{6,})/i,  // v202512 ou similar
-              /[?&]v(\d{6,})/i
             ];
             
             for (const vPattern of versionPatterns) {
-              const versionMatch = matchedPattern.match(vPattern);
+              const versionMatch = url.match(vPattern);
               if (versionMatch && versionMatch[1]) {
-                version = versionMatch[1];
-                break;
+                // Ignora timestamps muito longos (como 639032280270510241)
+                if (versionMatch[1].length <= 20) {
+                  version = versionMatch[1];
+                  linkComVersao = url;
+                  break;
+                }
               }
             }
+            if (version !== 'Padrão') break;
           }
         }
         
-        let fullUrl = matchedPattern;
+        let fullUrl = linkComVersao;
         if (!fullUrl.startsWith('http')) {
           fullUrl = `https:${fullUrl}`;
         }
