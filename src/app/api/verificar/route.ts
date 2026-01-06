@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verificarSite } from '@/utils/verificarSite';
-import { obterSites } from '@/utils/cacheManager';
-import { adicionarOfflineHistory, adicionarSlowHistory } from '@/utils/cacheManager';
+import { obterSites, adicionarOfflineHistory, adicionarSlowHistory, obterOfflineHistory, atualizarOfflineHistory, gerarId } from '@/utils/cacheManager';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,17 +21,13 @@ export async function POST(request: NextRequest) {
 
       const status = await verificarSite(site);
       
-      // Adiciona ao histórico se necessário
-      if (status.status === 'offline') {
-        await adicionarOfflineHistory({
-          siteId: site.id,
-          siteName: site.nome,
-          url: site.url,
-          timestamp: new Date().toISOString(),
-          error: status.error
-        });
-      } else if (status.status === 'slow') {
+      // Gerencia histórico de offline
+      await gerenciarHistoricoOffline(site, status);
+      
+      // Adiciona ao histórico de slow se necessário
+      if (status.status === 'slow') {
         await adicionarSlowHistory({
+          id: gerarId(),
           siteId: site.id,
           siteName: site.nome,
           url: site.url,
@@ -56,17 +51,13 @@ export async function POST(request: NextRequest) {
           const status = await verificarSite(site);
           resultados[site.id] = status;
           
-          // Adiciona ao histórico se necessário
-          if (status.status === 'offline') {
-            await adicionarOfflineHistory({
-              siteId: site.id,
-              siteName: site.nome,
-              url: site.url,
-              timestamp: new Date().toISOString(),
-              error: status.error
-            });
-          } else if (status.status === 'slow') {
+          // Gerencia histórico de offline
+          await gerenciarHistoricoOffline(site, status);
+          
+          // Adiciona ao histórico de slow se necessário
+          if (status.status === 'slow') {
             await adicionarSlowHistory({
+              id: gerarId(),
               siteId: site.id,
               siteName: site.nome,
               url: site.url,
@@ -103,4 +94,48 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}
+
+/**
+ * Gerencia o histórico de offline:
+ * - Se o site ficou offline, cria um novo registro
+ * - Se o site voltou online, atualiza o registro existente com a data de volta
+ */
+async function gerenciarHistoricoOffline(site: any, status: any) {
+  const history = await obterOfflineHistory();
+  
+  // Procura se existe um registro aberto (sem wentOnlineAt) para este site
+  const registroAberto = history.find(
+    entry => entry.siteId === site.id && !entry.wentOnlineAt
+  );
+  
+  if (status.status === 'offline') {
+    // Site está offline
+    if (!registroAberto) {
+      // Não existe registro aberto, cria um novo
+      await adicionarOfflineHistory({
+        id: gerarId(),
+        siteId: site.id,
+        siteName: site.nome,
+        url: site.url,
+        statusCode: status.statusCode,
+        error: status.error,
+        wentOfflineAt: new Date().toISOString(),
+      });
+    }
+    // Se já existe registro aberto, não faz nada (continua offline)
+  } else {
+    // Site está online (ou slow, rate_limited, etc.)
+    if (registroAberto) {
+      // Existe registro aberto, fecha ele
+      const wentOnlineAt = new Date().toISOString();
+      const wentOfflineAt = new Date(registroAberto.wentOfflineAt).getTime();
+      const duration = Math.floor((Date.now() - wentOfflineAt) / 1000); // duração em segundos
+      
+      await atualizarOfflineHistory(registroAberto.id, {
+        wentOnlineAt,
+        duration
+      });
+    }
+  }
+}
