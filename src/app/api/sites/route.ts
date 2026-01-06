@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { obterSites, salvarSites, adicionarSite, atualizarSite, removerSite, gerarId } from '@/utils/cacheManager';
-import { Site } from '@/utils/supabase';
+import { obterSites, adicionarSite, atualizarSite, removerSite, gerarId, Site } from '@/utils/cacheManager';
 
 export async function GET() {
   try {

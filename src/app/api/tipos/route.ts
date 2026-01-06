@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { obterTipos, adicionarTipo, atualizarTipo, removerTipo } from '@/utils/cacheManager';
-import { Tipo } from '@/utils/supabase';
+import { obterTipos, adicionarTipo, atualizarTipo, removerTipo, Tipo } from '@/utils/cacheManager';
 
 export async function GET() {
   try {

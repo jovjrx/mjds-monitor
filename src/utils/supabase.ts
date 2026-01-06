@@ -1,15 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+// Interfaces para compatibilidade (dados agora são armazenados localmente em JSON)
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('[Supabase] Variáveis de ambiente não configuradas');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Interfaces para as tabelas
 export interface Site {
   id: string;
   url: string;
@@ -28,5 +18,9 @@ export interface Tipo {
   created_at?: string;
   updated_at?: string;
 }
+
+// Exporta um objeto vazio para manter compatibilidade com imports existentes
+// O sistema agora usa armazenamento local em JSON
+export const supabase = null;
 
 export default supabase;
