@@ -113,13 +113,13 @@ const detectarCDNMJDS = (html: string): { provider?: string; isUsingCDN: boolean
     if (html.includes(domain)) {
       // Regex para encontrar TODAS as URLs do CDN
       const urlPattern = new RegExp(`https?://${domain.replace(/\./g, '\\.')}[^"'\s>]*`, 'gi');
-      const allUrls = html.match(urlPattern) || [];
+      let allUrls: string[] = html.match(urlPattern) || [];
       
       if (allUrls.length === 0) {
         // Tenta sem protocolo
         const urlPattern2 = new RegExp(`//${domain.replace(/\./g, '\\.')}[^"'\s>]*`, 'gi');
         const urls2 = html.match(urlPattern2) || [];
-        allUrls.push(...urls2);
+        allUrls = urls2;
       }
       
       if (allUrls.length > 0) {
@@ -157,8 +157,8 @@ const detectarCDNMJDS = (html: string): { provider?: string; isUsingCDN: boolean
           }
         }
         
-        let fullUrl = linkComVersao;
-        if (!fullUrl.startsWith('http')) {
+        let fullUrl: string = linkComVersao || '';
+        if (fullUrl && !fullUrl.startsWith('http')) {
           fullUrl = `https:${fullUrl}`;
         }
         
